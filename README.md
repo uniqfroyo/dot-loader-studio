@@ -2,6 +2,8 @@
 
 A visual editor for dot-matrix loading animations, the "AI is thinking" kind. Pick a preset or draw frame by frame, then export React, HTML or GIF.
 
+**▶ 在线使用 / Live demo: https://uniqfroyo.github.io/dot-loader-studio/**
+
 用来制作 “AI 正在思考” 那类点阵 loading 动效的编辑器。整个工具是一个 HTML 文件，没有任何依赖。
 
 ## 使用
