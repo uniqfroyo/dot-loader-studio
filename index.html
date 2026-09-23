@@ -1,0 +1,1728 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Dot Loader Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#09090b; --panel:#0e0e11; --panel2:#15151a; --panel3:#1c1c22;
+  --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.12);
+  --text:#ececf1; --muted:#8c8c98; --dim:#5d5d68;
+  --accent:#a78bfa; --accent-ink:#0b0b0f;
+  --r:10px;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font:13px/1.45 Inter,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+i[data-icon]{display:inline-flex;width:16px;height:16px;flex:none}
+i[data-icon] svg{width:100%;height:100%}
+[hidden]{display:none!important}
+
+.app{display:grid;grid-template-rows:56px minmax(0,1fr);height:100vh}
+
+/* ---------- header ---------- */
+.top{display:flex;align-items:center;gap:16px;padding:0 16px;border-bottom:1px solid var(--line);background:rgba(9,9,11,.85);backdrop-filter:blur(14px);position:relative;z-index:5}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.brand canvas{width:26px;height:26px}
+.brand b{display:block;font-weight:600;font-size:14px;letter-spacing:-.01em}
+.brand span{display:block;color:var(--muted);font-size:11.5px}
+.actions{display:flex;gap:8px;align-items:center;flex:1;justify-content:flex-end}
+.vsep{width:1px;height:20px;background:var(--line2);margin:0 4px}
+
+.btn{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:8px;background:var(--panel3);border:1px solid var(--line2);font-weight:500;font-size:12.5px;white-space:nowrap;transition:background .15s,border-color .15s,transform .1s}
+.btn:hover{background:#25252d}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent}
+.btn.block{width:100%;justify-content:center}
+.btn:disabled{opacity:.45;pointer-events:none}
+.icon-btn{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:8px;color:#c7c7d0;transition:background .15s,color .15s}
+.icon-btn:hover{background:var(--panel3);color:#fff}
+.icon-btn:disabled{opacity:.3;pointer-events:none}
+.icon-btn.on{background:var(--panel3);color:var(--accent)}
+
+/* segmented */
+.seg{display:inline-flex;padding:3px;gap:2px;background:var(--panel2);border:1px solid var(--line);border-radius:9px}
+.seg button{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 12px;border-radius:6px;color:var(--muted);font-weight:500;font-size:12.5px;white-space:nowrap;transition:background .15s,color .15s}
+.seg button:hover{color:var(--text)}
+.seg button.on{background:var(--panel3);color:var(--text);box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 1px 3px rgba(0,0,0,.4)}
+.seg.mini button{height:22px;padding:0 8px;font-size:11.5px}
+.mode-seg button{height:30px;padding:0 14px}
+.mode-seg button.on i{color:var(--accent)}
+
+/* ---------- layout ---------- */
+main{display:grid;grid-template-columns:272px minmax(0,1fr) 312px;min-height:0}
+.panel{overflow-y:auto;padding:4px 16px 24px;scrollbar-width:thin;scrollbar-color:#2a2a32 transparent}
+.panel.left{border-right:1px solid var(--line)}
+.panel.right{border-left:1px solid var(--line)}
+.sec{padding:16px 0 18px;border-bottom:1px solid var(--line)}
+.sec:last-child{border-bottom:0}
+.sec h4{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);min-height:28px}
+.sec h4 .seg{text-transform:none;letter-spacing:0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.lbl{color:#c4c4cd}
+.val{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:none;letter-spacing:0}
+.field{margin-bottom:12px}
+.field-top{display:flex;justify-content:space-between;margin-bottom:4px;color:#c4c4cd}
+.hint{color:var(--dim);font-size:11.5px;line-height:1.55}
+
+/* range */
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:18px;background:transparent;cursor:pointer;--p:50%}
+input[type=range]:focus{outline:none}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--accent) var(--p),rgba(255,255,255,.1) var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;margin-top:-5px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.6);transition:transform .15s}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15)}
+input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:rgba(255,255,255,.1)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:4px;background:var(--accent)}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:#fff}
+
+/* stepper */
+.stepper{display:inline-flex;align-items:center;background:var(--panel2);border:1px solid var(--line);border-radius:8px;height:28px}
+.stepper button{width:28px;height:100%;color:var(--muted);font-size:15px}
+.stepper button:hover{color:#fff}
+.stepper b{min-width:26px;text-align:center;font:500 12px var(--mono)}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.chip{height:26px;padding:0 10px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);color:#b9b9c4;font-size:12px;font-family:var(--mono);white-space:nowrap;transition:all .15s}
+.chip:hover{border-color:var(--line2);color:#fff}
+.chip.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.chip.txt{font-family:inherit}
+
+/* switch */
+.switch{position:relative;width:32px;height:18px;border-radius:9px;background:#2a2a32;transition:background .2s;flex:none}
+.switch span{position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s cubic-bezier(.3,.7,.4,1)}
+.switch.on{background:var(--accent)}
+.switch.on span{transform:translateX(14px)}
+
+/* shapes */
+.shape-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:0;background:none;border:0}
+.shape-grid button{flex-direction:column;height:54px;gap:5px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;font-size:11px;padding:0}
+.shape-grid button svg{width:16px;height:16px}
+.shape-grid button.on{border-color:var(--accent);color:var(--text);background:color-mix(in srgb,var(--accent) 10%,var(--panel2));box-shadow:none}
+.shape-grid button.on svg{color:var(--accent)}
+
+/* colors */
+.swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:14px}
+.sw{aspect-ratio:1;border-radius:7px;border:1px solid rgba(255,255,255,.1);position:relative;transition:transform .15s}
+.sw:hover{transform:scale(1.08)}
+.sw.on::after{content:"";position:absolute;inset:-4px;border-radius:10px;border:1.5px solid var(--text)}
+.color-field{display:flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:3px 8px 3px 3px;height:30px}
+.color-field input[type=color]{-webkit-appearance:none;appearance:none;width:22px;height:22px;border:0;border-radius:6px;background:none;cursor:pointer;padding:0}
+.color-field input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+.color-field input[type=color]::-webkit-color-swatch{border:1px solid rgba(255,255,255,.15);border-radius:6px}
+.color-field input[type=color]::-moz-color-swatch{border:1px solid rgba(255,255,255,.15);border-radius:6px}
+.color-field input[type=text]{width:66px;background:none;border:0;outline:none;font:12px var(--mono);text-transform:uppercase}
+.grad-only.off{display:none}
+
+/* ---------- center ---------- */
+.center{display:flex;flex-direction:column;min-width:0;min-height:0;padding:14px;gap:12px}
+.toolbar{display:flex;align-items:center;gap:10px;min-height:40px}
+.tb-group{display:flex;align-items:center;gap:6px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.tb-group::-webkit-scrollbar{display:none}
+.tb-label{color:var(--dim);font-size:11.5px;margin-right:2px;white-space:nowrap}
+.tb-sep{width:1px;height:20px;background:var(--line2);margin:0 4px;flex:none}
+.brush-dot{width:12px;height:12px;border-radius:50%;background:var(--accent)}
+.play{width:36px;height:36px;border-radius:50%;background:var(--panel3);border:1px solid var(--line2);color:#fff;flex:none}
+.play:hover{background:#26262e}
+
+.stage-wrap{position:relative;flex:1;min-height:300px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.stage-wrap canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.stage-hint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);padding:5px 12px;border-radius:99px;background:rgba(20,20,26,.72);backdrop-filter:blur(8px);border:1px solid var(--line);color:#b4b4bf;font-size:11.5px;white-space:nowrap;pointer-events:none}
+.stage-tag{position:absolute;left:12px;top:12px;padding:3px 8px;border-radius:6px;background:rgba(20,20,26,.6);border:1px solid var(--line);font:11px var(--mono);color:var(--muted);pointer-events:none}
+
+/* timeline */
+.timeline{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 10px 10px}
+.tl-bar{display:flex;align-items:center;gap:2px;margin-bottom:8px}
+.tl-info{font:12px var(--mono);color:var(--muted);margin:0 8px;min-width:54px}
+.spacer{flex:1}
+.strip{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:thin;scrollbar-color:#2a2a32 transparent}
+.thumb{position:relative;flex:none;width:56px;height:56px;border-radius:9px;border:1px solid var(--line2);overflow:hidden;transition:border-color .15s,transform .15s}
+.thumb canvas{width:100%;height:100%;display:block}
+.thumb span{position:absolute;right:4px;bottom:2px;font:10px var(--mono);color:rgba(255,255,255,.55);text-shadow:0 1px 2px #000}
+.thumb:hover{border-color:rgba(255,255,255,.3)}
+.thumb.on{border:2px solid var(--accent)}
+.thumb.add{display:grid;place-items:center;border-style:dashed;color:var(--muted);background:transparent}
+.thumb.add:hover{color:#fff}
+
+/* ---------- right ---------- */
+.chat{border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px;background:#141418;border:1px solid var(--line);transition:background .25s}
+.chat .bubble{align-self:flex-end;max-width:85%;padding:8px 12px;border-radius:14px 14px 4px 14px;background:#26262e;font-size:12.5px}
+.chat .ai-row{display:flex;align-items:center;gap:10px;min-height:28px}
+.chat .ai-row canvas{flex:none}
+.shimmer{font-size:13px;font-weight:500;background:linear-gradient(90deg,#6b6b76 0%,#6b6b76 40%,#f4f4f5 50%,#6b6b76 60%,#6b6b76 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 2.2s linear infinite}
+@keyframes shimmer{from{background-position:100% 0}to{background-position:-150% 0}}
+.demo-btn{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:8px;background:#232329;border:1px solid var(--line2);font-size:12px;color:#d4d4dc;cursor:default}
+.chat.light{background:#f5f5f7;border-color:rgba(0,0,0,.08)}
+.chat.light .bubble{background:#e7e7ec;color:#18181b}
+.chat.light .shimmer{background-image:linear-gradient(90deg,#a1a1aa 0%,#a1a1aa 40%,#18181b 50%,#a1a1aa 60%,#a1a1aa 100%)}
+.chat.light .demo-btn{background:#fff;border-color:rgba(0,0,0,.1);color:#27272a}
+.meta{margin-top:10px;font:11px var(--mono);color:var(--dim)}
+
+.gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.preset{display:flex;flex-direction:column;border-radius:10px;border:1px solid var(--line);background:var(--panel2);overflow:hidden;transition:border-color .15s,transform .15s}
+.preset:hover{border-color:var(--line2);transform:translateY(-1px)}
+.preset canvas{width:100%;aspect-ratio:1;display:block}
+.preset span{padding:5px 0 6px;font-size:11.5px;color:#b3b3be;border-top:1px solid var(--line)}
+.preset.on{border-color:var(--accent)}
+.preset.on span{color:var(--text);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+select{width:100%;height:30px;padding:0 8px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);outline:none}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:12px;color:var(--muted)}
+kbd{font:11px var(--mono);padding:1px 6px;border-radius:5px;background:var(--panel3);border:1px solid var(--line2);color:#d4d4dc;justify-self:start}
+
+/* ---------- modal ---------- */
+.modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);animation:fade .18s ease-out}
+.sheet{width:min(820px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;background:#111115;border:1px solid var(--line2);border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.6);animation:pop .22s cubic-bezier(.2,.8,.3,1)}
+.sheet.small{width:min(460px,100%)}
+.sheet-head{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.sheet-head h3{font-size:14px;font-weight:600;flex:1}
+.sheet-body{padding:16px;overflow:auto;min-height:0}
+.sheet-foot{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
+pre.code{margin:0;max-height:52vh;overflow:auto;padding:14px;border-radius:10px;background:#0a0a0d;border:1px solid var(--line);font:12px/1.6 var(--mono);color:#d6d6de;white-space:pre;tab-size:2}
+.t-c{color:#6b6b78}.t-s{color:#a5d6a7}.t-k{color:#c4a7ff}.t-n{color:#fbbf77}
+.gif-box{display:grid;place-items:center;min-height:220px;border-radius:12px;border:1px solid var(--line);margin-bottom:14px;overflow:hidden;background-color:#1a1a1f;background-image:linear-gradient(45deg,#232329 25%,transparent 25%,transparent 75%,#232329 75%),linear-gradient(45deg,#232329 25%,transparent 25%,transparent 75%,#232329 75%);background-size:16px 16px;background-position:0 0,8px 8px}
+.gif-box img{max-width:100%;max-height:300px;image-rendering:auto}
+.progress{height:3px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden;margin:4px 0 10px}
+.progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .15s}
+@keyframes fade{from{opacity:0}}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}}
+
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);opacity:0;padding:9px 16px;border-radius:10px;background:#f4f4f5;color:#111;font-weight:500;font-size:12.5px;pointer-events:none;transition:all .25s cubic-bezier(.2,.8,.3,1);z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+body[data-mode=pattern] .seq-only{display:none!important}
+body[data-mode=sequence] .pat-only{display:none!important}
+
+/* ---------- responsive ---------- */
+@media (max-width:1180px){
+  main{grid-template-columns:260px minmax(0,1fr)}
+  .panel.right{grid-column:1/-1;border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));column-gap:24px}
+  .panel.right .sec{border-bottom:0}
+  body{overflow:auto}
+  .app{height:auto;min-height:100vh}
+  main{min-height:calc(100vh - 56px)}
+  .center{min-height:560px}
+}
+@media (max-width:760px){
+  .top{padding:0 12px;gap:8px}
+  .brand div,.vsep,#undoBtn,#redoBtn{display:none}
+  .btn span.lab{display:none}
+  .btn{padding:0 10px}
+  main{grid-template-columns:1fr}
+  .panel.left{border-right:0;border-bottom:1px solid var(--line);order:2}
+  .center{order:1;min-height:480px;padding:12px}
+  .panel.right{order:3}
+}
+</style>
+</head>
+<body data-mode="pattern">
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <canvas id="logo" width="52" height="52"></canvas>
+      <div><b>Dot Loader Studio</b><span>点阵加载动效编辑器</span></div>
+    </div>
+    <div class="seg mode-seg" data-key="mode">
+      <button data-v="pattern"><i data-icon="dots"></i>预设模式</button>
+      <button data-v="sequence"><i data-icon="film"></i>序列模式</button>
+    </div>
+    <div class="actions">
+      <button class="icon-btn" id="undoBtn" title="撤销 (⌘Z)"><i data-icon="undo"></i></button>
+      <button class="icon-btn" id="redoBtn" title="重做 (⇧⌘Z)"><i data-icon="redo"></i></button>
+      <span class="vsep"></span>
+      <button class="btn" id="codeBtn"><i data-icon="code"></i><span class="lab">复制代码</span></button>
+      <button class="btn primary" id="gifBtn"><i data-icon="download"></i><span class="lab">下载 GIF</span></button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ================= LEFT ================= -->
+    <aside class="panel left">
+      <section class="sec">
+        <h4>网格</h4>
+        <div class="chips" id="gridChips"></div>
+        <div class="row"><span class="lbl">列数</span>
+          <div class="stepper" data-key="cols"><button data-d="-1" aria-label="减少列">−</button><b id="colsVal"></b><button data-d="1" aria-label="增加列">+</button></div></div>
+        <div class="row"><span class="lbl">行数</span>
+          <div class="stepper" data-key="rows"><button data-d="-1" aria-label="减少行">−</button><b id="rowsVal"></b><button data-d="1" aria-label="增加行">+</button></div></div>
+        <div class="field"><div class="field-top"><span>点大小</span><span class="val" id="dotSizeVal"></span></div>
+          <input type="range" id="dotSize" min="3" max="40" step="1"></div>
+        <div class="field"><div class="field-top"><span>间距</span><span class="val" id="gapVal"></span></div>
+          <input type="range" id="gap" min="0" max="24" step="1"></div>
+      </section>
+
+      <section class="sec">
+        <h4>形状</h4>
+        <div class="seg shape-grid" data-key="shape" id="shapeSeg"></div>
+      </section>
+
+      <section class="sec">
+        <h4>颜色
+          <div class="seg mini" data-key="colorMode"><button data-v="solid">纯色</button><button data-v="gradient">渐变</button></div>
+        </h4>
+        <div class="swatches" id="swatches"></div>
+        <div class="row"><span class="lbl" id="colorALbl">点颜色</span>
+          <div class="color-field"><input type="color" id="colorA"><input type="text" id="colorAHex" spellcheck="false" maxlength="7"></div></div>
+        <div class="grad-only">
+          <div class="row"><span class="lbl">渐变终点</span>
+            <div class="color-field"><input type="color" id="colorB"><input type="text" id="colorBHex" spellcheck="false" maxlength="7"></div></div>
+          <div class="row"><span class="lbl">方向</span>
+            <div class="seg mini" data-key="gradDir"><button data-v="horizontal">横</button><button data-v="vertical">竖</button><button data-v="diagonal">斜</button><button data-v="radial">径向</button></div></div>
+        </div>
+        <div class="row" style="margin-top:14px"><span class="lbl">背景色</span>
+          <div class="color-field"><input type="color" id="bg"><input type="text" id="bgHex" spellcheck="false" maxlength="7"></div></div>
+        <div class="swatches" id="bgSwatches" style="margin-bottom:0"></div>
+      </section>
+
+      <section class="sec">
+        <h4>效果</h4>
+        <div class="field"><div class="field-top"><span>暗格亮度</span><span class="val" id="baseVal"></span></div>
+          <input type="range" id="base" min="0" max="60" step="1"></div>
+        <div class="row"><span class="lbl">发光</span><button class="switch" data-key="glow" role="switch"><span></span></button></div>
+        <div class="row"><span class="lbl">亮度缩放</span><button class="switch" data-key="scaleFx" role="switch"><span></span></button></div>
+        <div class="row"><span class="lbl">隐藏暗格</span><button class="switch" data-key="hideOff" role="switch"><span></span></button></div>
+        <p class="hint">「隐藏暗格」开启后，未点亮的格子完全透明，只保留图案本身。</p>
+      </section>
+    </aside>
+
+    <!-- ================= CENTER ================= -->
+    <section class="center">
+      <div class="toolbar">
+        <div class="tb-group pat-only" id="maskChips">
+          <span class="tb-label">快速选区</span>
+        </div>
+        <div class="tb-group seq-only">
+          <div class="seg" data-key="tool">
+            <button data-v="pen" title="画笔 (B)"><i data-icon="pen"></i></button>
+            <button data-v="eraser" title="橡皮 (E)"><i data-icon="eraser"></i></button>
+            <button data-v="fill" title="填充 (G)"><i data-icon="bucket"></i></button>
+          </div>
+          <div class="seg" data-key="brush" data-num id="brushSeg">
+            <button data-v="1" title="亮度 100% (1)"><span class="brush-dot"></span></button>
+            <button data-v="0.66" title="亮度 66% (2)"><span class="brush-dot" style="opacity:.62"></span></button>
+            <button data-v="0.33" title="亮度 33% (3)"><span class="brush-dot" style="opacity:.3"></span></button>
+          </div>
+          <span class="tb-sep"></span>
+          <button class="icon-btn" data-shift="-1,0" title="整体左移"><i data-icon="left"></i></button>
+          <button class="icon-btn" data-shift="1,0" title="整体右移"><i data-icon="right"></i></button>
+          <button class="icon-btn" data-shift="0,-1" title="整体上移"><i data-icon="up"></i></button>
+          <button class="icon-btn" data-shift="0,1" title="整体下移"><i data-icon="down"></i></button>
+          <span class="tb-sep"></span>
+          <button class="icon-btn" id="invertFrame" title="反转当前帧"><i data-icon="invert"></i></button>
+          <button class="icon-btn" id="clearFrame" title="清空当前帧"><i data-icon="trash"></i></button>
+        </div>
+        <button class="icon-btn play" id="playBtn" title="播放 / 暂停 (Space)"></button>
+      </div>
+
+      <div class="stage-wrap" id="stageWrap">
+        <canvas id="stage"></canvas>
+        <div class="stage-tag" id="stageTag"></div>
+        <div class="stage-hint" id="stageHint"></div>
+      </div>
+
+      <div class="timeline seq-only">
+        <div class="tl-bar">
+          <button class="icon-btn" id="prevFrame" title="上一帧 (←)"><i data-icon="prev"></i></button>
+          <button class="icon-btn" id="seqPlay" title="播放 (Space)"></button>
+          <button class="icon-btn" id="nextFrame" title="下一帧 (→)"><i data-icon="next"></i></button>
+          <span class="tl-info" id="frameInfo"></span>
+          <div class="spacer"></div>
+          <button class="icon-btn" id="addFrame" title="新建空白帧 (N)"><i data-icon="plus"></i></button>
+          <button class="icon-btn" id="dupFrame" title="复制当前帧 (D)"><i data-icon="copy"></i></button>
+          <button class="icon-btn" id="moveLeft" title="前移"><i data-icon="left"></i></button>
+          <button class="icon-btn" id="moveRight" title="后移"><i data-icon="right"></i></button>
+          <button class="icon-btn" id="delFrame" title="删除当前帧 (Delete)"><i data-icon="trash"></i></button>
+          <span class="tb-sep"></span>
+          <button class="icon-btn" id="onionBtn" title="洋葱皮：显示上一帧 (O)"><i data-icon="layers"></i></button>
+        </div>
+        <div class="strip" id="strip"></div>
+      </div>
+    </section>
+
+    <!-- ================= RIGHT ================= -->
+    <aside class="panel right">
+      <section class="sec">
+        <h4>实际效果
+          <div class="seg mini" data-key="previewTheme"><button data-v="dark">暗</button><button data-v="light">亮</button></div>
+        </h4>
+        <div class="chat" id="chat">
+          <div class="bubble">帮我把登录页改成深色主题</div>
+          <div class="ai-row"><canvas id="pv"></canvas><span class="shimmer">正在思考…</span></div>
+          <div class="demo-btn"><canvas id="pvBtn"></canvas>生成中</div>
+        </div>
+        <div class="meta" id="meta"></div>
+      </section>
+
+      <section class="sec pat-only">
+        <h4>预设动画 <span class="val" id="presetName"></span></h4>
+        <div class="gallery" id="gallery"></div>
+        <div class="field"><div class="field-top"><span>循环时长</span><span class="val" id="durationVal"></span></div>
+          <input type="range" id="duration" min="300" max="5000" step="50"></div>
+        <div class="row"><span class="lbl">反向播放</span><button class="switch" data-key="reverse" role="switch"><span></span></button></div>
+        <button class="btn block" id="toSeqBtn" style="margin-top:6px"><i data-icon="wand"></i>转为序列帧，逐帧精修</button>
+      </section>
+
+      <section class="sec seq-only">
+        <h4>序列设置</h4>
+        <div class="field"><div class="field-top"><span>每帧时长</span><span class="val" id="frameMsVal"></span></div>
+          <input type="range" id="frameMs" min="30" max="600" step="10"></div>
+        <div class="row"><span class="lbl">洋葱皮</span><button class="switch" data-key="onion" role="switch"><span></span></button></div>
+      </section>
+
+      <section class="sec seq-only">
+        <h4>从预设生成</h4>
+        <div class="field"><select id="genPreset"></select></div>
+        <div class="field"><div class="field-top"><span>帧数</span><span class="val" id="genCountVal"></span></div>
+          <input type="range" id="genCount" min="4" max="32" step="1"></div>
+        <button class="btn block" id="genBtn"><i data-icon="wand"></i>生成序列（覆盖当前）</button>
+        <p class="hint" style="margin-top:8px">以当前选区和预设为起点生成帧，再逐帧修改。</p>
+      </section>
+
+      <section class="sec seq-only">
+        <h4>快捷键</h4>
+        <div class="keys">
+          <kbd>Space</kbd><span>播放 / 暂停</span>
+          <kbd>← →</kbd><span>切换帧</span>
+          <kbd>B E G</kbd><span>画笔 / 橡皮 / 填充</span>
+          <kbd>1 2 3</kbd><span>画笔亮度</span>
+          <kbd>N D</kbd><span>新建 / 复制帧</span>
+          <kbd>右键</kbd><span>擦除</span>
+          <kbd>⌘ Z</kbd><span>撤销（⇧ 重做）</span>
+        </div>
+      </section>
+    </aside>
+  </main>
+</div>
+
+<!-- ================= MODALS ================= -->
+<div class="modal" id="codeModal" hidden>
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3>导出代码</h3>
+      <div class="seg" data-key="codeTab"><button data-v="react">React</button><button data-v="html">HTML</button><button data-v="json">JSON 项目</button></div>
+      <button class="icon-btn" data-close title="关闭"><i data-icon="x"></i></button>
+    </div>
+    <div class="sheet-body">
+      <p class="hint" id="codeMeta" style="margin-bottom:10px"></p>
+      <pre class="code"><code id="codeOut"></code></pre>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn ghost" id="importBtn"><i data-icon="upload"></i>导入 JSON</button>
+      <button class="btn ghost" id="saveJsonBtn"><i data-icon="download"></i>保存 .json</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+      <div class="spacer"></div>
+      <button class="btn primary" id="copyCode"><i data-icon="copy"></i>复制代码</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="gifModal" hidden>
+  <div class="sheet small">
+    <div class="sheet-head">
+      <h3>导出 GIF</h3>
+      <button class="icon-btn" data-close title="关闭"><i data-icon="x"></i></button>
+    </div>
+    <div class="sheet-body">
+      <div class="gif-box"><img id="gifImg" alt="GIF 预览" hidden><span class="hint" id="gifPlaceholder">正在生成…</span></div>
+      <div class="progress"><i id="gifProg"></i></div>
+      <div class="row"><span class="lbl">尺寸</span>
+        <div class="seg mini" data-key="gifScale" data-num><button data-v="1">1×</button><button data-v="2">2×</button><button data-v="3">3×</button><button data-v="4">4×</button></div></div>
+      <div class="row"><span class="lbl">透明背景</span><button class="switch" data-key="gifTransparent" role="switch"><span></span></button></div>
+      <p class="hint" id="gifMeta"></p>
+    </div>
+    <div class="sheet-foot">
+      <div class="spacer"></div>
+      <button class="btn primary" id="gifDownload" disabled><i data-icon="download"></i>下载 GIF</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   Utilities
+   ===================================================================== */
+const TAU = Math.PI * 2;
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const frac = x => x - Math.floor(x);
+function hash(n) {
+  let x = (Math.imul(n | 0, 374761393) + 668265263) | 0;
+  x = Math.imul(x ^ (x >>> 13), 1274126177);
+  x ^= x >>> 16;
+  return (x >>> 0) / 4294967296;
+}
+const HEX_RE = /^#[0-9a-f]{6}$/i;
+const hexToRgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const rgbToHex = c => '#' + c.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+const mixRgb = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+const lum = c => (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
+let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+const ICONS = {
+  dots: '<g fill="currentColor" stroke="none"><circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2" opacity=".4"/><circle cx="5" cy="12" r="2" opacity=".4"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2" opacity=".4"/><circle cx="19" cy="19" r="2"/></g>',
+  film: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18M17 3v18M3 7.5h4M3 12h18M3 16.5h4M17 7.5h4M17 16.5h4"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
+  code: '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
+  play: '<polygon points="7 4 19 12 7 20 7 4" fill="currentColor"/>',
+  pause: '<rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor"/><rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor"/>',
+  prev: '<polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/>',
+  next: '<polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/>',
+  plus: '<path d="M5 12h14M12 5v14"/>',
+  copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  trash: '<path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+  left: '<path d="m15 18-6-6 6-6"/>', right: '<path d="m9 18 6-6-6-6"/>',
+  up: '<path d="m18 15-6-6-6 6"/>', down: '<path d="m6 9 6 6 6-6"/>',
+  pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  eraser: '<path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7M5 11l9 9"/>',
+  bucket: '<path d="m19 11-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2c.8.8 2 .8 2.8 0L19 11Z"/><path d="m5 2 5 5M2 13h15"/><path d="M22 20a2 2 0 1 1-4 0c0-1.6 1.7-2.4 2-4 .3 1.6 2 2.4 2 4Z"/>',
+  layers: '<path d="m12 2 10 5-10 5L2 7l10-5Z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
+  invert: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>',
+  wand: '<path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/><path d="m14 7 3 3M5 6v4M19 14v4M10 2v2M7 8H3M21 16h-4M11 3H9"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  shuffle: '<path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4M2 6h1.9c1.5 0 2.9.9 3.6 2.2M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8M18 14l4 4-4 4"/>',
+};
+const svgIcon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ''}</svg>`;
+function paintIcons(root = document) { $$('i[data-icon]', root).forEach(el => { el.innerHTML = svgIcon(el.dataset.icon); }); }
+
+/* =====================================================================
+   Shapes
+   ===================================================================== */
+const SHAPES = { circle: '圆形', rounded: '圆角', square: '方形', diamond: '菱形', ring: '圆环', plus: '十字', hex: '六边形' };
+const POLY = {
+  diamond: [[.5, 0], [1, .5], [.5, 1], [0, .5]],
+  plus: [[.34, 0], [.66, 0], [.66, .34], [1, .34], [1, .66], [.66, .66], [.66, 1], [.34, 1], [.34, .66], [0, .66], [0, .34], [.34, .34]],
+  hex: [[.25, .067], [.75, .067], [1, .5], [.75, .933], [.25, .933], [0, .5]],
+};
+function roundRectPath(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function shapePath(ctx, shape, x, y, s) {
+  const h = s / 2;
+  ctx.beginPath();
+  if (shape === 'circle') ctx.arc(x, y, h, 0, TAU);
+  else if (shape === 'ring') ctx.arc(x, y, Math.max(0.1, h - s * 0.12), 0, TAU);
+  else if (shape === 'square') ctx.rect(x - h, y - h, s, s);
+  else if (shape === 'rounded') roundRectPath(ctx, x - h, y - h, s, s, s * 0.28);
+  else {
+    const p = POLY[shape];
+    ctx.moveTo(x - h + p[0][0] * s, y - h + p[0][1] * s);
+    for (let k = 1; k < p.length; k++) ctx.lineTo(x - h + p[k][0] * s, y - h + p[k][1] * s);
+    ctx.closePath();
+  }
+}
+function shapeSvg(shape) {
+  if (shape === 'circle') return '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="currentColor"/></svg>';
+  if (shape === 'ring') return '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.3" fill="none" stroke="currentColor" stroke-width="2.6"/></svg>';
+  if (shape === 'square') return '<svg viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" fill="currentColor"/></svg>';
+  if (shape === 'rounded') return '<svg viewBox="0 0 16 16"><rect x="1.5" y="1.5" width="13" height="13" rx="3.6" fill="currentColor"/></svg>';
+  const pts = POLY[shape].map(([x, y]) => `${(1.5 + x * 13).toFixed(2)},${(1.5 + y * 13).toFixed(2)}`).join(' ');
+  return `<svg viewBox="0 0 16 16"><polygon points="${pts}" fill="currentColor"/></svg>`;
+}
+
+/* =====================================================================
+   Preset animations — fn(cell, phase 0..1, grid) → brightness 0..1
+   ===================================================================== */
+const pulse = (x, k = 2.4) => Math.pow(0.5 + 0.5 * Math.cos(TAU * x), k);
+const tail = (u, len) => { u = frac(u); return u < len ? Math.pow(1 - u / len, 1.6) : 0; };
+const PRESETS = [
+  { id: 'ripple', name: '涟漪', fn: (c, p) => pulse(p - c.d * 0.8, 2.2) },
+  { id: 'breathe', name: '呼吸', fn: (c, p) => 0.06 + 0.94 * (0.5 - 0.5 * Math.cos(TAU * p)) },
+  { id: 'wave', name: '波浪', fn: (c, p) => pulse(p - c.nx * 0.75, 2) },
+  { id: 'diagonal', name: '斜扫', fn: (c, p) => pulse(p - (c.nx + c.ny) * 0.4, 2.4) },
+  { id: 'radar', name: '雷达', fn: (c, p) => tail(p - c.a, 0.5) },
+  { id: 'spiral', name: '螺旋', fn: (c, p) => tail(p - c.rs, 0.3) },
+  { id: 'snake', name: '贪吃蛇', fn: (c, p) => tail(p - c.rk, 0.28) },
+  { id: 'fill', name: '进度条', fn: (c, p, g) => {
+      const n = g.count + 1, k = c.rr * g.count;
+      if (p < 0.5) return clamp(p * 2 * n - k, 0, 1);
+      return 1 - clamp((p - 0.5) * 2 * n - k, 0, 1);
+    } },
+  { id: 'twinkle', name: '星光', fn: (c, p) => Math.max(tail(p - c.h, 0.3), tail(p - c.h2, 0.3) * 0.6) },
+  { id: 'rain', name: '雨滴', fn: (c, p) => {
+      const head = frac(p + c.hc) * 1.7 - 0.1, diff = head - c.ny;
+      return diff >= 0 && diff < 0.6 ? Math.pow(1 - diff / 0.6, 1.5) : 0;
+    } },
+  { id: 'equalizer', name: '均衡器', fn: (c, p, g) => {
+      const k = 1 + Math.floor(c.hc * 2);
+      const h = 0.15 + 0.85 * (0.5 + 0.5 * Math.sin(TAU * (p * k + c.hc)));
+      return clamp(h * g.rows - (g.rows - 1 - c.y), 0, 1);
+    } },
+  { id: 'bounce', name: '弹跳', fn: (c, p, g) => {
+      const hgt = Math.abs(Math.sin(Math.PI * (2 * p - c.nx * 0.9)));
+      const by = (g.rows - 1) * (1 - hgt);
+      return Math.pow(clamp(1 - Math.abs(c.y - by), 0, 1), 1.2);
+    } },
+  { id: 'scan', name: '扫描', fn: (c, p, g) => {
+      const pos = (0.5 - 0.5 * Math.cos(TAU * p)) * (g.rows - 1);
+      return Math.pow(clamp(1 - Math.abs(c.y - pos) / 1.3, 0, 1), 1.3);
+    } },
+  { id: 'windmill', name: '风车', fn: (c, p) => {
+      const th = Math.PI * p, dist = Math.abs(-Math.sin(th) * c.cx + Math.cos(th) * c.cy);
+      return Math.pow(clamp(1 - dist / 0.9, 0, 1), 1.4);
+    } },
+  { id: 'diamond', name: '菱形扩散', fn: (c, p) => pulse(p - c.m * 0.8, 2.4) },
+  { id: 'checker', name: '棋盘', fn: (c, p) => pulse(p + ((c.x + c.y) & 1) * 0.5, 1.5) },
+  { id: 'heartbeat', name: '心跳', fn: (c, p) => {
+      const t = frac(p - c.d * 0.12);
+      return Math.min(1, Math.exp(-(((t - 0.08) / 0.05) ** 2)) + 0.75 * Math.exp(-(((t - 0.26) / 0.06) ** 2)));
+    } },
+  { id: 'stagger', name: '交错', fn: (c, p) => pulse(p - (c.y % 2 ? 1 - c.nx : c.nx) * 0.6, 2.4) },
+  { id: 'noise', name: '噪点', fn: (c, p) => {
+      const steps = 10, t = p * steps, k = Math.floor(t), f = t - k, e = f * f * (3 - 2 * f);
+      const a = hash(c.i * 131 + (k % steps)), b = hash(c.i * 131 + ((k + 1) % steps));
+      const v = a + (b - a) * e;
+      return v > 0.5 ? (v - 0.5) / 0.5 : 0;
+    } },
+];
+const PRESET_MAP = Object.fromEntries(PRESETS.map(p => [p.id, p]));
+
+/* =====================================================================
+   State
+   ===================================================================== */
+const STORE = 'dot-loader-studio:v1';
+const DEFAULTS = {
+  mode: 'pattern', cols: 5, rows: 5, shape: 'circle', dotSize: 12, gap: 6,
+  colorMode: 'solid', colorA: '#a78bfa', colorB: '#22d3ee', gradDir: 'diagonal', bg: '#0b0b0f',
+  base: 0.12, glow: true, scaleFx: false, hideOff: false,
+  preset: 'ripple', duration: 1600, reverse: false,
+  mask: null, frames: null, frameMs: 100, cur: 0, onion: true, tool: 'pen', brush: 1,
+  genPreset: 'radar', genCount: 12,
+  previewTheme: 'dark', codeTab: 'react', gifScale: 2, gifTransparent: false,
+};
+let S = structuredClone(DEFAULTS);
+const play = { pattern: true, sequence: false };
+
+function applyProject(o) {
+  if (!o || typeof o !== 'object') throw new Error('无效的项目文件');
+  for (const k in DEFAULTS) {
+    if (!(k in o) || o[k] == null) continue;
+    if (DEFAULTS[k] === null || typeof o[k] === typeof DEFAULTS[k]) S[k] = o[k];
+  }
+  S.cols = clamp(S.cols | 0 || 5, 1, 16);
+  S.rows = clamp(S.rows | 0 || 5, 1, 16);
+  for (const k of ['colorA', 'colorB', 'bg']) if (!HEX_RE.test(S[k])) S[k] = DEFAULTS[k];
+  if (!SHAPES[S.shape]) S.shape = 'circle';
+  if (!PRESET_MAP[S.preset]) S.preset = 'ripple';
+  if (!PRESET_MAP[S.genPreset]) S.genPreset = 'radar';
+  if (!['pattern', 'sequence'].includes(S.mode)) S.mode = 'pattern';
+  const n = S.cols * S.rows;
+  S.mask = Array.isArray(S.mask) && S.mask.length === n ? S.mask.map(v => v ? 1 : 0) : new Array(n).fill(1);
+  if (!Array.isArray(S.frames) || !S.frames.length || S.frames.some(f => !Array.isArray(f) || f.length !== n)) S.frames = null;
+  else S.frames = S.frames.map(f => f.map(v => clamp(+v || 0, 0, 1)));
+  G = null;
+}
+let saveTimer;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} }, 250);
+}
+
+/* history (content edits only) */
+const hist = { past: [], future: [] };
+const snapshot = () => JSON.stringify({ cols: S.cols, rows: S.rows, mask: S.mask, frames: S.frames, cur: S.cur });
+function pushHistory() {
+  hist.past.push(snapshot());
+  if (hist.past.length > 150) hist.past.shift();
+  hist.future = [];
+  updateUndoUI();
+}
+function restore(json) {
+  const o = JSON.parse(json);
+  Object.assign(S, o);
+  S.cur = clamp(S.cur, 0, S.frames.length - 1);
+  G = null;
+  renderStrip(true); syncUI(); save();
+}
+function undo() { if (!hist.past.length) return; hist.future.push(snapshot()); restore(hist.past.pop()); }
+function redo() { if (!hist.future.length) return; hist.past.push(snapshot()); restore(hist.future.pop()); }
+function updateUndoUI() { $('#undoBtn').disabled = !hist.past.length; $('#redoBtn').disabled = !hist.future.length; }
+
+/* =====================================================================
+   Geometry cache
+   ===================================================================== */
+let G = null;
+function spiralOrder(c, r) {
+  const out = []; let t = 0, b = r - 1, l = 0, rt = c - 1;
+  while (t <= b && l <= rt) {
+    for (let x = l; x <= rt; x++) out.push(t * c + x);
+    for (let y = t + 1; y <= b; y++) out.push(y * c + rt);
+    if (t < b) for (let x = rt - 1; x >= l; x--) out.push(b * c + x);
+    if (l < rt) for (let y = b - 1; y > t; y--) out.push(y * c + l);
+    t++; b--; l++; rt--;
+  }
+  return out;
+}
+function geom() {
+  if (G && G.cols === S.cols && G.rows === S.rows) return G;
+  const { cols, rows, mask } = S, n = cols * rows, hx = (cols - 1) / 2, hy = (rows - 1) / 2;
+  const maxD = Math.hypot(hx, hy) || 1, maxM = (hx + hy) || 1;
+  const cells = [];
+  for (let i = 0; i < n; i++) {
+    const x = i % cols, y = (i / cols) | 0, cx = x - hx, cy = y - hy;
+    cells.push({
+      i, x, y, cx, cy,
+      d: Math.hypot(cx, cy) / maxD, m: (Math.abs(cx) + Math.abs(cy)) / maxM,
+      a: frac(Math.atan2(cx, -cy) / TAU),
+      nx: cols > 1 ? x / (cols - 1) : 0.5, ny: rows > 1 ? y / (rows - 1) : 0.5,
+      h: hash(i * 7 + 1), h2: hash(i * 13 + 5), hc: hash(x * 31 + 7),
+      rr: 0, rk: 0, rs: 0,
+    });
+  }
+  const count = mask.reduce((a, v) => a + (v ? 1 : 0), 0);
+  const rank = (order, key) => { let k = 0; for (const i of order) if (mask[i]) { cells[i][key] = count ? k / count : 0; k++; } };
+  const snake = [];
+  for (let y = 0; y < rows; y++) for (let k = 0; k < cols; k++) snake.push(y * cols + (y % 2 ? cols - 1 - k : k));
+  rank([...Array(n).keys()], 'rr'); rank(snake, 'rk'); rank(spiralOrder(cols, rows), 'rs');
+  G = { cells, count, cols, rows };
+  return G;
+}
+
+/* =====================================================================
+   Frame values: -1 = hidden, 0..1 = brightness
+   ===================================================================== */
+function patternVals(p, id = S.preset, out) {
+  const g = geom(), n = g.cells.length;
+  if (!out || out.length !== n) out = new Float32Array(n);
+  const fn = PRESET_MAP[id].fn, pp = frac(S.reverse ? 1 - p : p);
+  for (let i = 0; i < n; i++) {
+    if (!S.mask[i]) { out[i] = S.hideOff ? -1 : 0; continue; }
+    const v = fn(g.cells[i], pp, g);
+    out[i] = v > 0 ? (v < 1 ? v : 1) : 0;
+  }
+  return out;
+}
+function seqVals(k, out) {
+  const f = S.frames[k] || [], n = S.cols * S.rows;
+  if (!out || out.length !== n) out = new Float32Array(n);
+  for (let i = 0; i < n; i++) { const v = f[i] || 0; out[i] = v > 0 ? v : (S.hideOff ? -1 : 0); }
+  return out;
+}
+const quant = v => v < 0.17 ? 0 : v < 0.5 ? 0.33 : v < 0.83 ? 0.66 : 1;
+function framesFromPreset(id, n) {
+  const out = [];
+  for (let k = 0; k < n; k++) out.push(Array.from(patternVals(k / n, id), x => quant(Math.max(0, x))));
+  return out;
+}
+function exportFrames() {
+  if (S.mode === 'pattern') {
+    const n = clamp(Math.round(S.duration / 40), 8, 125);
+    const vals = [];
+    for (let k = 0; k < n; k++) vals.push(Float32Array.from(patternVals(k / n)));
+    return { vals, interval: S.duration / n, smooth: true };
+  }
+  return { vals: S.frames.map((_, k) => Float32Array.from(seqVals(k))), interval: S.frameMs, smooth: false };
+}
+
+/* colors per cell */
+let colorCache = null;
+function colors() {
+  const key = [S.colorMode, S.colorA, S.colorB, S.gradDir, S.cols, S.rows].join('|');
+  if (colorCache && colorCache.key === key) return colorCache.css;
+  const a = hexToRgb(S.colorA), b = hexToRgb(S.colorB);
+  const css = geom().cells.map(c => {
+    if (S.colorMode !== 'gradient') return S.colorA;
+    const t = S.gradDir === 'horizontal' ? c.nx : S.gradDir === 'vertical' ? c.ny : S.gradDir === 'radial' ? c.d : (c.nx + c.ny) / 2;
+    return rgbToHex(mixRgb(a, b, t));
+  });
+  colorCache = { key, css };
+  return css;
+}
+
+/* =====================================================================
+   Renderer
+   ===================================================================== */
+function gridSize() {
+  return [S.cols * S.dotSize + (S.cols - 1) * S.gap, S.rows * S.dotSize + (S.rows - 1) * S.gap];
+}
+function fitLayout(W, H, pad, maxCell) {
+  const [gw, gh] = gridSize();
+  let k = Math.min((W - 2 * pad) / gw, (H - 2 * pad) / gh);
+  if (maxCell) k = Math.min(k, maxCell / S.dotSize);
+  k = Math.max(k, 0.01);
+  return { cell: S.dotSize * k, gap: S.gap * k, ox: (W - gw * k) / 2, oy: (H - gh * k) / 2, k };
+}
+function drawDots(ctx, L, vals, cols, o = {}) {
+  const C = S.cols, base = S.base, step = L.cell + L.gap, glow = o.glow && S.glow, am = o.alpha ?? 1, shape = S.shape;
+  ctx.save();
+  for (let i = 0; i < vals.length; i++) {
+    const v = vals[i];
+    if (v < 0) continue;
+    const a = (base + (1 - base) * v) * am;
+    if (a < 0.004) continue;
+    const x = L.ox + (i % C) * step + L.cell / 2, y = L.oy + ((i / C) | 0) * step + L.cell / 2;
+    const s = L.cell * (S.scaleFx ? 0.4 + 0.6 * v : 1);
+    const col = cols[i];
+    ctx.globalAlpha = a;
+    if (glow && v > 0.02) { ctx.shadowBlur = L.cell * 1.1 * v; ctx.shadowColor = col; } else ctx.shadowBlur = 0;
+    shapePath(ctx, shape, x, y, s);
+    if (shape === 'ring') { ctx.lineWidth = s * 0.24; ctx.strokeStyle = col; ctx.stroke(); }
+    else { ctx.fillStyle = col; ctx.fill(); }
+  }
+  ctx.restore();
+}
+
+/* =====================================================================
+   Stage (editor canvas)
+   ===================================================================== */
+const stageCv = $('#stage'), sctx = stageCv.getContext('2d');
+let SL = null, hover = -1, painting = false, paintVal = 1, lastCell = -1;
+new ResizeObserver(() => {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const r = stageCv.getBoundingClientRect();
+  stageCv.width = Math.max(1, Math.round(r.width * dpr));
+  stageCv.height = Math.max(1, Math.round(r.height * dpr));
+}).observe($('#stageWrap'));
+
+function drawStage(vals) {
+  const ctx = sctx, W = stageCv.width, H = stageCv.height;
+  ctx.fillStyle = S.bg; ctx.fillRect(0, 0, W, H);
+  const L = SL = fitLayout(W, H, 40 * dpr, 64 * dpr);
+  const step = L.cell + L.gap, C = S.cols, n = vals.length;
+  const ink = lum(hexToRgb(S.bg)) > 0.55 ? '0,0,0' : '255,255,255';
+  const cols = colors();
+  const m = Math.min(L.gap * 0.4, L.cell * 0.14);
+  ctx.save();
+  // slots: mask outlines + ghost markers for invisible cells
+  for (let i = 0; i < n; i++) {
+    const x = L.ox + (i % C) * step, y = L.oy + ((i / C) | 0) * step;
+    if (S.mode === 'pattern' && S.mask[i]) {
+      ctx.strokeStyle = `rgba(${ink},.14)`; ctx.lineWidth = dpr;
+      ctx.beginPath(); roundRectPath(ctx, x - m, y - m, L.cell + 2 * m, L.cell + 2 * m, L.cell * 0.3); ctx.stroke();
+    }
+    const v = vals[i], eff = v < 0 ? 0 : S.base + (1 - S.base) * v;
+    if (eff < 0.08) {
+      ctx.fillStyle = `rgba(${ink},.06)`;
+      shapePath(ctx, S.shape === 'ring' ? 'circle' : S.shape, x + L.cell / 2, y + L.cell / 2, L.cell);
+      ctx.fill();
+    }
+  }
+  // onion skin (previous frame)
+  if (S.mode === 'sequence' && !play.sequence && S.onion && S.frames.length > 1) {
+    const prev = seqVals((S.cur - 1 + S.frames.length) % S.frames.length);
+    for (let i = 0; i < prev.length; i++) if (prev[i] <= 0) prev[i] = -1;
+    const saveBase = S.base; S.base = 0;
+    drawDots(ctx, L, prev, cols, { alpha: 0.28 });
+    S.base = saveBase;
+  }
+  ctx.restore();
+  drawDots(ctx, L, vals, cols, { glow: true });
+  if (hover >= 0 && hover < n) {
+    const x = L.ox + (hover % C) * step, y = L.oy + ((hover / C) | 0) * step;
+    ctx.strokeStyle = `rgba(${ink},.6)`; ctx.lineWidth = 1.5 * dpr;
+    ctx.beginPath(); roundRectPath(ctx, x - m, y - m, L.cell + 2 * m, L.cell + 2 * m, L.cell * 0.3); ctx.stroke();
+  }
+}
+
+function cellAt(e) {
+  if (!SL) return -1;
+  const r = stageCv.getBoundingClientRect();
+  const px = (e.clientX - r.left) * dpr, py = (e.clientY - r.top) * dpr, step = SL.cell + SL.gap;
+  const x = Math.floor((px - SL.ox + SL.gap / 2) / step), y = Math.floor((py - SL.oy + SL.gap / 2) / step);
+  if (x < 0 || y < 0 || x >= S.cols || y >= S.rows) return -1;
+  return y * S.cols + x;
+}
+function applyPaint(i) {
+  if (S.mode === 'pattern') { if (S.mask[i] !== paintVal) { S.mask[i] = paintVal; G = null; } }
+  else { const f = S.frames[S.cur]; if (f[i] !== paintVal) { f[i] = paintVal; thumbDirty.add(S.cur); } }
+}
+function paintLine(a, b) {
+  const C = S.cols; let x0 = a % C, y0 = (a / C) | 0; const x1 = b % C, y1 = (b / C) | 0;
+  const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+  let err = dx + dy;
+  for (;;) {
+    applyPaint(y0 * C + x0);
+    if (x0 === x1 && y0 === y1) break;
+    const e2 = 2 * err;
+    if (e2 >= dy) { err += dy; x0 += sx; }
+    if (e2 <= dx) { err += dx; y0 += sy; }
+  }
+}
+function floodFill(start, val) {
+  const f = S.frames[S.cur], target = f[start], C = S.cols, R = S.rows;
+  if (target === val) return;
+  const stack = [start];
+  while (stack.length) {
+    const i = stack.pop();
+    if (f[i] !== target) continue;
+    f[i] = val;
+    const x = i % C, y = (i / C) | 0;
+    if (x > 0) stack.push(i - 1); if (x < C - 1) stack.push(i + 1);
+    if (y > 0) stack.push(i - C); if (y < R - 1) stack.push(i + C);
+  }
+  thumbDirty.add(S.cur);
+}
+stageCv.addEventListener('contextmenu', e => e.preventDefault());
+stageCv.addEventListener('pointerdown', e => {
+  const i = cellAt(e);
+  if (i < 0) return;
+  e.preventDefault();
+  pushHistory();
+  if (S.mode === 'pattern') {
+    paintVal = S.mask[i] ? 0 : 1;
+  } else {
+    if (play.sequence) setPlaying(false);
+    const erase = e.button === 2 || S.tool === 'eraser';
+    if (S.tool === 'fill') { floodFill(i, erase ? 0 : S.brush); afterEdit(); return; }
+    const f = S.frames[S.cur];
+    paintVal = erase ? 0 : (f[i] === S.brush ? 0 : S.brush);
+  }
+  painting = true; lastCell = i;
+  applyPaint(i);
+  stageCv.setPointerCapture(e.pointerId);
+  afterEdit();
+});
+stageCv.addEventListener('pointermove', e => {
+  const i = cellAt(e);
+  hover = i;
+  if (painting && i >= 0 && i !== lastCell) { paintLine(lastCell, i); lastCell = i; afterEdit(); }
+});
+const endPaint = () => { painting = false; };
+stageCv.addEventListener('pointerup', endPaint);
+stageCv.addEventListener('pointercancel', endPaint);
+stageCv.addEventListener('pointerleave', () => { hover = -1; });
+
+function afterEdit() { save(); updateHint(); }
+
+/* mask quick shapes */
+const MASKS = [['all', '全部'], ['none', '清空'], ['invert', '反选'], ['circle', '圆形'], ['ring', '圆环'], ['cross', '十字'], ['x', 'X 形'], ['diamond', '菱形'], ['border', '边框'], ['random', '随机']];
+function maskShape(kind) {
+  pushHistory();
+  const { cols, rows } = S, hx = (cols - 1) / 2, hy = (rows - 1) / 2, R = Math.min(hx, hy), seed = (Math.random() * 1e6) | 0;
+  S.mask = geom().cells.map(c => {
+    const dist = Math.hypot(c.cx, c.cy), ax = Math.abs(c.cx), ay = Math.abs(c.cy);
+    switch (kind) {
+      case 'all': return 1;
+      case 'none': return 0;
+      case 'invert': return S.mask[c.i] ? 0 : 1;
+      case 'circle': return dist <= R + 0.5 ? 1 : 0;
+      case 'ring': return Math.abs(dist - R) <= 0.5 ? 1 : 0;
+      case 'cross': return ax < 0.6 || ay < 0.6 ? 1 : 0;
+      case 'x': return Math.abs(ax - ay) < 0.6 ? 1 : 0;
+      case 'diamond': return ax + ay <= R + 0.5 ? 1 : 0;
+      case 'border': return c.x === 0 || c.y === 0 || c.x === cols - 1 || c.y === rows - 1 ? 1 : 0;
+      case 'random': return hash(seed + c.i * 97) > 0.45 ? 1 : 0;
+    }
+    return 1;
+  });
+  G = null; afterEdit();
+}
+
+/* grid resize (keeps content centred) */
+function resizeGrid(nc, nr) {
+  nc = clamp(nc, 1, 16); nr = clamp(nr, 1, 16);
+  if (nc === S.cols && nr === S.rows) return;
+  pushHistory();
+  const oc = S.cols, or = S.rows, dx = Math.floor((nc - oc) / 2), dy = Math.floor((nr - or) / 2);
+  const remap = (arr, fill) => {
+    const out = new Array(nc * nr).fill(fill);
+    for (let y = 0; y < or; y++) for (let x = 0; x < oc; x++) {
+      const X = x + dx, Y = y + dy;
+      if (X >= 0 && Y >= 0 && X < nc && Y < nr) out[Y * nc + X] = arr[y * oc + x];
+    }
+    return out;
+  };
+  S.mask = S.mask.every(Boolean) ? new Array(nc * nr).fill(1) : remap(S.mask, 0);
+  S.frames = S.frames.map(f => remap(f, 0));
+  S.cols = nc; S.rows = nr; G = null;
+  renderStrip(true); syncUI(); save();
+}
+
+/* =====================================================================
+   Sequence ops
+   ===================================================================== */
+let thumbDirty = new Set(), stripCanvases = [], seqStart = 0;
+const blankFrame = () => new Array(S.cols * S.rows).fill(0);
+function gotoFrame(k) {
+  if (play.sequence) setPlaying(false);
+  const n = S.frames.length;
+  S.cur = ((k % n) + n) % n;
+  onCurChange(); save();
+}
+function onCurChange() {
+  const strip = $('#strip');
+  [...strip.children].forEach((b, k) => b.classList.toggle('on', k === S.cur));
+  const el = strip.children[S.cur];
+  if (el && S.mode === 'sequence') {
+    const sr = strip.getBoundingClientRect(), er = el.getBoundingClientRect();
+    if (er.left < sr.left || er.right > sr.right) strip.scrollLeft += er.left - sr.left - sr.width / 2 + er.width / 2;
+  }
+  updateHint();
+}
+function frameOp(fn) { pushHistory(); fn(); S.cur = clamp(S.cur, 0, S.frames.length - 1); renderStrip(true); afterEdit(); }
+const addFrame = () => frameOp(() => { S.frames.splice(S.cur + 1, 0, blankFrame()); S.cur++; });
+const dupFrame = () => frameOp(() => { S.frames.splice(S.cur + 1, 0, S.frames[S.cur].slice()); S.cur++; });
+const delFrame = () => { if (S.frames.length <= 1) { toast('至少保留一帧'); return; } frameOp(() => { S.frames.splice(S.cur, 1); }); };
+const moveFrame = d => {
+  const j = S.cur + d; if (j < 0 || j >= S.frames.length) return;
+  frameOp(() => { const f = S.frames; [f[S.cur], f[j]] = [f[j], f[S.cur]]; S.cur = j; });
+};
+function shiftFrame(dx, dy) {
+  if (play.sequence) setPlaying(false);
+  pushHistory();
+  const f = S.frames[S.cur], { cols, rows } = S, out = new Array(f.length);
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++)
+    out[((y + dy + rows) % rows) * cols + ((x + dx + cols) % cols)] = f[y * cols + x];
+  S.frames[S.cur] = out; thumbDirty.add(S.cur); afterEdit();
+}
+function genFromPreset(id, n) {
+  pushHistory();
+  S.frames = framesFromPreset(id, n); S.cur = 0;
+  renderStrip(true);
+}
+
+function renderStrip(force) {
+  const strip = $('#strip'), n = S.frames.length;
+  if (force || stripCanvases.length !== n) {
+    strip.innerHTML = ''; stripCanvases = [];
+    for (let k = 0; k < n; k++) {
+      const b = document.createElement('button');
+      b.className = 'thumb'; b.dataset.i = k; b.title = `第 ${k + 1} 帧`;
+      b.innerHTML = `<canvas width="112" height="112"></canvas><span>${k + 1}</span>`;
+      strip.appendChild(b); stripCanvases.push(b.firstChild);
+    }
+    const add = document.createElement('button');
+    add.className = 'thumb add'; add.dataset.add = '1'; add.title = '新建空白帧';
+    add.innerHTML = '<i data-icon="plus"></i>';
+    strip.appendChild(add); paintIcons(add);
+    thumbDirty = new Set(S.frames.keys());
+  }
+  [...strip.children].forEach((b, k) => b.classList.toggle('on', k === S.cur));
+}
+$('#strip').addEventListener('click', e => {
+  const b = e.target.closest('.thumb'); if (!b) return;
+  if (b.dataset.add) addFrame(); else gotoFrame(+b.dataset.i);
+});
+let thumbBuf;
+function drawThumbs() {
+  for (const k of thumbDirty) {
+    const cv = stripCanvases[k]; if (!cv) continue;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = S.bg; ctx.fillRect(0, 0, cv.width, cv.height);
+    thumbBuf = seqVals(k, thumbBuf);
+    drawDots(ctx, fitLayout(cv.width, cv.height, 12, null), thumbBuf, colors(), {});
+  }
+  thumbDirty.clear();
+}
+
+/* =====================================================================
+   Playback
+   ===================================================================== */
+let tStart = performance.now(), pausedP = 0;
+const phaseNow = now => frac((now - tStart) / S.duration);
+function setPlaying(on) {
+  const now = performance.now();
+  if (S.mode === 'pattern') {
+    if (!on) pausedP = phaseNow(now); else tStart = now - pausedP * S.duration;
+    play.pattern = on;
+  } else {
+    if (on) seqStart = now - S.cur * S.frameMs;
+    play.sequence = on;
+  }
+  updatePlayUI();
+}
+const togglePlay = () => setPlaying(!play[S.mode]);
+function updatePlayUI() {
+  const on = play[S.mode];
+  const html = svgIcon(on ? 'pause' : 'play');
+  $('#playBtn').innerHTML = html; $('#seqPlay').innerHTML = html;
+  $('#playBtn').title = on ? '暂停 (Space)' : '播放 (Space)';
+}
+
+/* =====================================================================
+   Preview card, gallery, logo
+   ===================================================================== */
+const pv = $('#pv'), pvBtn = $('#pvBtn');
+function sizePreviewCanvas(cv, maxW, maxH) {
+  const [gw, gh] = gridSize();
+  const pad = S.glow ? Math.min(10, S.dotSize * 0.6) : 2;
+  const k = Math.min(1, (maxW - 2 * pad) / gw, (maxH - 2 * pad) / gh);
+  const w = Math.round(gw * k + 2 * pad), h = Math.round(gh * k + 2 * pad);
+  const key = `${w}x${h}@${dpr}`;
+  if (cv._key !== key) {
+    cv._key = key; cv.style.width = w + 'px'; cv.style.height = h + 'px';
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  }
+  return fitLayout(cv.width, cv.height, pad * dpr, null);
+}
+function drawPreview(vals) {
+  const cols = colors();
+  let L = sizePreviewCanvas(pv, 160, 110), ctx = pv.getContext('2d');
+  ctx.clearRect(0, 0, pv.width, pv.height); drawDots(ctx, L, vals, cols, { glow: true });
+  L = sizePreviewCanvas(pvBtn, 40, 18); ctx = pvBtn.getContext('2d');
+  ctx.clearRect(0, 0, pvBtn.width, pvBtn.height); drawDots(ctx, L, vals, cols, { glow: false });
+}
+const galleryThumbs = [];
+function buildGallery() {
+  const g = $('#gallery');
+  for (const pr of PRESETS) {
+    const b = document.createElement('button');
+    b.className = 'preset'; b.dataset.id = pr.id;
+    b.innerHTML = `<canvas width="160" height="160"></canvas><span>${pr.name}</span>`;
+    b.addEventListener('click', () => { S.preset = pr.id; tStart = performance.now(); pausedP = 0; syncUI(); save(); });
+    g.appendChild(b);
+    galleryThumbs.push({ id: pr.id, cv: b.firstChild, ctx: b.firstChild.getContext('2d'), buf: null });
+  }
+  const sel = $('#genPreset');
+  sel.innerHTML = PRESETS.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  sel.addEventListener('change', () => { S.genPreset = sel.value; save(); });
+}
+function drawGallery(p) {
+  const cols = colors();
+  for (const t of galleryThumbs) {
+    const { cv, ctx } = t;
+    ctx.fillStyle = S.bg; ctx.fillRect(0, 0, cv.width, cv.height);
+    t.buf = patternVals(p, t.id, t.buf);
+    drawDots(ctx, fitLayout(cv.width, cv.height, 18, 22), t.buf, cols, {});
+  }
+}
+const logoCv = $('#logo'), logoCtx = logoCv.getContext('2d');
+function drawLogo(now) {
+  const ctx = logoCtx, W = logoCv.width, p = frac(now / 1600);
+  ctx.clearRect(0, 0, W, W);
+  for (let i = 0; i < 9; i++) {
+    const x = i % 3, y = (i / 3) | 0, d = Math.hypot(x - 1, y - 1) / Math.SQRT2;
+    ctx.globalAlpha = 0.18 + 0.82 * pulse(p - d * 0.7, 2);
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent');
+    ctx.beginPath(); ctx.arc(9 + x * 17, 9 + y * 17, 6, 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* =====================================================================
+   Main loop
+   ===================================================================== */
+let bufA, bufB;
+function tick(now) {
+  const pNow = phaseNow(now);
+  let vals;
+  if (S.mode === 'pattern') {
+    vals = bufA = patternVals(play.pattern ? pNow : pausedP, S.preset, bufA);
+    drawStage(vals);
+    drawPreview(play.pattern ? vals : (bufB = patternVals(pNow, S.preset, bufB)));
+    drawGallery(pNow);
+  } else {
+    const n = S.frames.length;
+    if (play.sequence) {
+      const c = Math.floor((now - seqStart) / S.frameMs) % n;
+      if (c !== S.cur) { S.cur = c; onCurChange(); }
+    }
+    vals = bufA = seqVals(S.cur, bufA);
+    drawStage(vals);
+    drawPreview(bufB = seqVals(Math.floor(now / S.frameMs) % n, bufB));
+    drawThumbs();
+  }
+  drawLogo(now);
+  requestAnimationFrame(tick);
+}
+
+/* =====================================================================
+   UI bindings
+   ===================================================================== */
+const syncers = [];
+function bindRange(id, key, { toUi = v => v, fromUi = v => +v, fmt = v => v, before, after } = {}) {
+  const el = $('#' + id), out = $('#' + id + 'Val');
+  const paint = () => el.style.setProperty('--p', ((el.value - el.min) / (el.max - el.min) * 100) + '%');
+  el.addEventListener('input', () => {
+    before && before();
+    S[key] = fromUi(el.value);
+    if (out) out.textContent = fmt(S[key]);
+    paint(); after && after(); save();
+  });
+  syncers.push(() => { el.value = toUi(S[key]); if (out) out.textContent = fmt(S[key]); paint(); });
+}
+function bindColor(key) {
+  const pick = $('#' + key), hex = $('#' + key + 'Hex');
+  pick.addEventListener('input', () => { S[key] = pick.value; hex.value = pick.value; onStyleChange(); });
+  hex.addEventListener('change', () => {
+    let v = hex.value.trim(); if (!v.startsWith('#')) v = '#' + v;
+    if (/^#[0-9a-f]{3}$/i.test(v)) v = '#' + [...v.slice(1)].map(c => c + c).join('');
+    if (HEX_RE.test(v)) { S[key] = v.toLowerCase(); onStyleChange(); } else hex.value = S[key];
+  });
+  syncers.push(() => { pick.value = S[key]; hex.value = S[key]; });
+}
+function onStyleChange() { thumbDirty = new Set(S.frames.keys()); syncUI(); save(); }
+
+const DOT_SWATCHES = ['#a78bfa', '#818cf8', '#60a5fa', '#22d3ee', '#34d399', '#a3e635', '#facc15', '#fb923c', '#f87171', '#f472b6', '#e4e4e7', '#ffffff'];
+const GRAD_SWATCHES = [['#a78bfa', '#22d3ee'], ['#f472b6', '#facc15'], ['#34d399', '#60a5fa'], ['#fb923c', '#f43f5e'], ['#818cf8', '#f472b6'], ['#e4e4e7', '#52525b'],
+  ['#22d3ee', '#a3e635'], ['#facc15', '#f87171'], ['#60a5fa', '#a78bfa'], ['#ffffff', '#fb923c'], ['#34d399', '#facc15'], ['#f43f5e', '#8b5cf6']];
+const BG_SWATCHES = ['#0b0b0f', '#000000', '#18181b', '#111827', '#1e1b4b', '#ffffff'];
+function renderSwatches() {
+  const box = $('#swatches');
+  if (S.colorMode === 'gradient') {
+    box.innerHTML = GRAD_SWATCHES.map(([a, b]) =>
+      `<button class="sw${S.colorA === a && S.colorB === b ? ' on' : ''}" data-a="${a}" data-b="${b}" style="background:linear-gradient(135deg,${a},${b})" title="${a} → ${b}"></button>`).join('');
+  } else {
+    box.innerHTML = DOT_SWATCHES.map(c => `<button class="sw${S.colorA === c ? ' on' : ''}" data-a="${c}" style="background:${c}" title="${c}"></button>`).join('');
+  }
+  $('#bgSwatches').innerHTML = BG_SWATCHES.map(c => `<button class="sw${S.bg === c ? ' on' : ''}" data-bg="${c}" style="background:${c}" title="${c}"></button>`).join('');
+}
+$('#swatches').addEventListener('click', e => {
+  const b = e.target.closest('.sw'); if (!b) return;
+  S.colorA = b.dataset.a; if (b.dataset.b) S.colorB = b.dataset.b; onStyleChange();
+});
+$('#bgSwatches').addEventListener('click', e => {
+  const b = e.target.closest('.sw'); if (!b) return; S.bg = b.dataset.bg; onStyleChange();
+});
+
+function setMode(m) {
+  S.mode = m;
+  if (m === 'sequence') { S.cur = clamp(S.cur, 0, S.frames.length - 1); renderStrip(true); }
+  syncUI(); save();
+}
+
+/* segmented controls */
+$$('.seg[data-key]').forEach(seg => seg.addEventListener('click', e => {
+  const b = e.target.closest('[data-v]'); if (!b) return;
+  const key = seg.dataset.key, v = seg.hasAttribute('data-num') ? +b.dataset.v : b.dataset.v;
+  if (key === 'mode') { setMode(v); return; }
+  S[key] = v;
+  if (key === 'codeTab') renderCode();
+  if (key === 'gifScale') runGif();
+  if (['shape', 'colorMode', 'gradDir'].includes(key)) { onStyleChange(); return; }
+  syncUI(); save();
+}));
+/* switches */
+$$('.switch[data-key]').forEach(sw => sw.addEventListener('click', () => {
+  const key = sw.dataset.key; S[key] = !S[key];
+  if (key === 'gifTransparent') runGif();
+  onStyleChange();
+}));
+/* steppers */
+$$('.stepper').forEach(st => st.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const d = +b.dataset.d;
+  if (st.dataset.key === 'cols') resizeGrid(S.cols + d, S.rows); else resizeGrid(S.cols, S.rows + d);
+}));
+/* grid chips */
+const GRID_CHIPS = [[3, 1], [3, 3], [4, 4], [5, 5], [7, 7], [9, 9], [12, 12], [8, 3]];
+$('#gridChips').innerHTML = GRID_CHIPS.map(([c, r]) => `<button class="chip" data-c="${c}" data-r="${r}">${c}×${r}</button>`).join('');
+$('#gridChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) resizeGrid(+b.dataset.c, +b.dataset.r); });
+/* shapes */
+$('#shapeSeg').innerHTML = Object.entries(SHAPES).map(([k, n]) => `<button data-v="${k}" title="${n}">${shapeSvg(k)}<span>${n}</span></button>`).join('');
+/* mask chips */
+$('#maskChips').insertAdjacentHTML('beforeend', MASKS.map(([k, n]) => `<button class="chip txt" data-mask="${k}">${n}</button>`).join(''));
+$('#maskChips').addEventListener('click', e => { const b = e.target.closest('[data-mask]'); if (b) maskShape(b.dataset.mask); });
+
+bindRange('dotSize', 'dotSize', { fmt: v => v + 'px', after: () => { thumbDirty = new Set(S.frames.keys()); } });
+bindRange('gap', 'gap', { fmt: v => v + 'px', after: () => { thumbDirty = new Set(S.frames.keys()); } });
+bindRange('base', 'base', { toUi: v => Math.round(v * 100), fromUi: v => v / 100, fmt: v => Math.round(v * 100) + '%', after: () => { thumbDirty = new Set(S.frames.keys()); } });
+let keepP = 0;
+bindRange('duration', 'duration', {
+  fmt: v => v + 'ms',
+  before: () => { keepP = play.pattern ? phaseNow(performance.now()) : pausedP; },
+  after: () => { tStart = performance.now() - keepP * S.duration; updateMeta(); },
+});
+bindRange('frameMs', 'frameMs', { fmt: v => v + 'ms', after: () => { seqStart = performance.now() - S.cur * S.frameMs; updateMeta(); } });
+bindRange('genCount', 'genCount', { fmt: v => v + ' 帧' });
+bindColor('colorA'); bindColor('colorB'); bindColor('bg');
+
+$('#playBtn').addEventListener('click', togglePlay);
+$('#seqPlay').addEventListener('click', togglePlay);
+$('#prevFrame').addEventListener('click', () => gotoFrame(S.cur - 1));
+$('#nextFrame').addEventListener('click', () => gotoFrame(S.cur + 1));
+$('#addFrame').addEventListener('click', addFrame);
+$('#dupFrame').addEventListener('click', dupFrame);
+$('#delFrame').addEventListener('click', delFrame);
+$('#moveLeft').addEventListener('click', () => moveFrame(-1));
+$('#moveRight').addEventListener('click', () => moveFrame(1));
+$('#onionBtn').addEventListener('click', () => { S.onion = !S.onion; syncUI(); save(); });
+$$('[data-shift]').forEach(b => b.addEventListener('click', () => { const [dx, dy] = b.dataset.shift.split(',').map(Number); shiftFrame(dx, dy); }));
+$('#clearFrame').addEventListener('click', () => { if (play.sequence) setPlaying(false); pushHistory(); S.frames[S.cur] = blankFrame(); thumbDirty.add(S.cur); afterEdit(); });
+$('#invertFrame').addEventListener('click', () => {
+  if (play.sequence) setPlaying(false); pushHistory();
+  S.frames[S.cur] = S.frames[S.cur].map(v => v > 0 ? 0 : S.brush); thumbDirty.add(S.cur); afterEdit();
+});
+$('#toSeqBtn').addEventListener('click', () => {
+  const n = clamp(Math.round(S.duration / 100), 6, 24);
+  genFromPreset(S.preset, n);
+  S.frameMs = Math.round(S.duration / n / 10) * 10;
+  S.genPreset = S.preset;
+  play.sequence = true; seqStart = performance.now();
+  setMode('sequence');
+  toast(`已生成 ${n} 帧，可以逐帧修改了`);
+});
+$('#genBtn').addEventListener('click', () => {
+  genFromPreset(S.genPreset, S.genCount);
+  syncUI(); save();
+  toast(`已从「${PRESET_MAP[S.genPreset].name}」生成 ${S.genCount} 帧`);
+});
+$('#undoBtn').addEventListener('click', undo);
+$('#redoBtn').addEventListener('click', redo);
+
+function updateHint() {
+  const n = S.cols * S.rows;
+  if (S.mode === 'pattern') {
+    const c = S.mask.reduce((a, v) => a + v, 0);
+    $('#stageHint').textContent = `点击或拖拽格子来点亮 / 熄灭 · 已点亮 ${c} / ${n}`;
+    $('#stageTag').textContent = `${S.cols}×${S.rows} · ${PRESET_MAP[S.preset].name}`;
+  } else {
+    $('#stageHint').textContent = play.sequence ? '播放中 · 点击画布即暂停并编辑' : '左键绘制 · 右键擦除 · 拖拽连续绘制';
+    $('#stageTag').textContent = `帧 ${S.cur + 1} / ${S.frames.length}`;
+    $('#frameInfo').textContent = `${S.cur + 1} / ${S.frames.length}`;
+  }
+}
+function updateMeta() {
+  const txt = S.mode === 'pattern'
+    ? `${S.cols}×${S.rows} · ${PRESET_MAP[S.preset].name} · ${S.duration}ms 循环`
+    : `${S.cols}×${S.rows} · ${S.frames.length} 帧 · ${S.frames.length * S.frameMs}ms 循环`;
+  $('#meta').textContent = txt;
+}
+function syncAccent() {
+  const c = hexToRgb(S.colorA), L = lum(c);
+  const acc = L > 0.25 ? S.colorA : '#a78bfa';
+  document.documentElement.style.setProperty('--accent', acc);
+  document.documentElement.style.setProperty('--accent-ink', lum(hexToRgb(acc)) > 0.55 ? '#0b0b0f' : '#ffffff');
+}
+function syncUI() {
+  document.body.dataset.mode = S.mode;
+  syncers.forEach(f => f());
+  $$('.seg[data-key]').forEach(seg => {
+    const v = String(S[seg.dataset.key]);
+    seg.querySelectorAll('[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  });
+  $$('.switch[data-key]').forEach(sw => { const on = !!S[sw.dataset.key]; sw.classList.toggle('on', on); sw.setAttribute('aria-checked', on); });
+  $('#colsVal').textContent = S.cols; $('#rowsVal').textContent = S.rows;
+  $$('#gridChips .chip').forEach(b => b.classList.toggle('on', +b.dataset.c === S.cols && +b.dataset.r === S.rows));
+  $('.grad-only').classList.toggle('off', S.colorMode !== 'gradient');
+  $('#colorALbl').textContent = S.colorMode === 'gradient' ? '渐变起点' : '点颜色';
+  $$('#gallery .preset').forEach(b => b.classList.toggle('on', b.dataset.id === S.preset));
+  $('#presetName').textContent = PRESET_MAP[S.preset].name;
+  $('#genPreset').value = S.genPreset;
+  $('#chat').classList.toggle('light', S.previewTheme === 'light');
+  $('#onionBtn').classList.toggle('on', S.onion);
+  renderSwatches(); syncAccent(); renderStrip(); updatePlayUI(); updateHint(); updateMeta(); updateUndoUI();
+}
+
+/* keyboard */
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input,textarea,select')) return;
+  const mod = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
+  if (e.key === 'Escape') { closeModals(); return; }
+  if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if (mod && k === 'y') { e.preventDefault(); redo(); return; }
+  if (mod || e.altKey || document.querySelector('.modal:not([hidden])')) return;
+  if (e.code === 'Space') { e.preventDefault(); togglePlay(); return; }
+  if (S.mode !== 'sequence') return;
+  const map = {
+    arrowleft: () => gotoFrame(S.cur - 1), arrowright: () => gotoFrame(S.cur + 1),
+    b: () => { S.tool = 'pen'; syncUI(); }, e: () => { S.tool = 'eraser'; syncUI(); }, g: () => { S.tool = 'fill'; syncUI(); },
+    1: () => { S.brush = 1; syncUI(); }, 2: () => { S.brush = 0.66; syncUI(); }, 3: () => { S.brush = 0.33; syncUI(); },
+    n: addFrame, d: dupFrame, delete: delFrame, backspace: delFrame, o: () => { S.onion = !S.onion; syncUI(); },
+  };
+  if (map[k]) { e.preventDefault(); map[k](); save(); }
+});
+
+/* =====================================================================
+   Code export
+   ===================================================================== */
+function genData() {
+  const { vals, interval, smooth } = exportFrames();
+  const frames = vals.map(v => Array.from(v, x => x < 0 ? '-' : Math.round(x * 15).toString(16)).join(''));
+  const css = colors(), uniq = [...new Set(css)];
+  return {
+    frames, smooth, interval: Math.round(interval * 100) / 100,
+    colors: uniq.length === 1 ? uniq : css,
+    cols: S.cols, rows: S.rows, base: Math.round(S.base * 100) / 100,
+    shape: S.shape, size: S.dotSize, gap: S.gap, glow: S.glow, scale: S.scaleFx,
+  };
+}
+const clipOf = shape => POLY[shape] ? `polygon(${POLY[shape].map(([x, y]) => `${+(x * 100).toFixed(1)}% ${+(y * 100).toFixed(1)}%`).join(', ')})` : '';
+const radiusOf = shape => ({ circle: '50%', ring: '50%', rounded: '28%' })[shape] || '';
+function framesLiteral(frames, indent) { return frames.map(f => `${indent}"${f}",`).join('\n'); }
+
+function genReact(d) {
+  const clip = clipOf(d.shape), radius = radiusOf(d.shape), ring = d.shape === 'ring';
+  const L = [];
+  L.push('import { useEffect, useState } from "react";');
+  L.push('');
+  L.push('/**');
+  L.push(` * DotLoader — ${d.cols}×${d.rows} dots · ${d.frames.length} frames · ${Math.round(d.interval * d.frames.length)}ms loop`);
+  L.push(' * Generated with Dot Loader Studio');
+  L.push(' */');
+  L.push(`const COLS = ${d.cols};`);
+  L.push(`const INTERVAL = ${d.interval}; // ms per frame`);
+  L.push(`const BASE = ${d.base}; // opacity of idle dots`);
+  L.push(`const COLORS = ${JSON.stringify(d.colors)};`);
+  L.push('// one string per frame, one char per dot: 0–f = brightness, "-" = hidden');
+  L.push('const FRAMES = [');
+  L.push(framesLiteral(d.frames, '  '));
+  L.push('];');
+  L.push('');
+  L.push('type Props = { size?: number; gap?: number; label?: string; className?: string };');
+  L.push('');
+  L.push(`export function DotLoader({ size = ${d.size}, gap = ${d.gap}, label = "Loading", className }: Props) {`);
+  L.push('  const [frame, setFrame] = useState(0);');
+  L.push('');
+  L.push('  useEffect(() => {');
+  L.push('    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;');
+  L.push('    const start = performance.now();');
+  L.push('    let raf = 0;');
+  L.push('    const tick = (now: number) => {');
+  L.push('      setFrame(Math.floor((now - start) / INTERVAL) % FRAMES.length);');
+  L.push('      raf = requestAnimationFrame(tick);');
+  L.push('    };');
+  L.push('    raf = requestAnimationFrame(tick);');
+  L.push('    return () => cancelAnimationFrame(raf);');
+  L.push('  }, []);');
+  L.push('');
+  L.push('  return (');
+  L.push('    <div');
+  L.push('      role="status"');
+  L.push('      aria-label={label}');
+  L.push('      className={className}');
+  L.push('      style={{');
+  L.push('        display: "inline-grid",');
+  L.push('        gridTemplateColumns: `repeat(${COLS}, ${size}px)`,');
+  L.push('        gap,');
+  if (d.glow) L.push('        filter: `drop-shadow(0 0 ${size * 0.5}px ${COLORS[0]}99)`,');
+  L.push('      }}');
+  L.push('    >');
+  L.push('      {[...FRAMES[frame]].map((c, i) => {');
+  L.push('        const v = c === "-" ? -1 : parseInt(c, 16) / 15;');
+  L.push('        const color = COLORS[i % COLORS.length];');
+  L.push('        return (');
+  L.push('          <span');
+  L.push('            key={i}');
+  L.push('            style={{');
+  L.push('              width: size,');
+  L.push('              height: size,');
+  if (radius) L.push(`              borderRadius: "${radius}",`);
+  if (clip) L.push(`              clipPath: "${clip}",`);
+  if (ring) L.push('              boxShadow: `inset 0 0 0 ${size * 0.24}px ${color}`,');
+  else L.push('              background: color,');
+  L.push('              opacity: v < 0 ? 0 : BASE + (1 - BASE) * v,');
+  if (d.scale) L.push('              transform: `scale(${v < 0 ? 0 : 0.4 + 0.6 * v})`,');
+  if (d.smooth) L.push('              transition: `opacity ${INTERVAL}ms linear, transform ${INTERVAL}ms linear`,');
+  L.push('            }}');
+  L.push('          />');
+  L.push('        );');
+  L.push('      })}');
+  L.push('    </div>');
+  L.push('  );');
+  L.push('}');
+  return L.join('\n');
+}
+
+function genHTML(d) {
+  const clip = clipOf(d.shape), radius = radiusOf(d.shape), ring = d.shape === 'ring';
+  const L = [];
+  L.push(`<!-- DotLoader · ${d.cols}×${d.rows} · ${d.frames.length} frames · generated with Dot Loader Studio -->`);
+  L.push('<div class="dot-loader" role="status" aria-label="Loading"></div>');
+  L.push('');
+  L.push('<style>');
+  L.push('  .dot-loader {');
+  L.push(`    --size: ${d.size}px;`);
+  L.push(`    --gap: ${d.gap}px;`);
+  L.push('    display: inline-grid;');
+  L.push(`    grid-template-columns: repeat(${d.cols}, var(--size));`);
+  L.push('    gap: var(--gap);');
+  if (d.glow) L.push(`    filter: drop-shadow(0 0 calc(var(--size) * 0.5) ${d.colors[0]}99);`);
+  L.push('  }');
+  L.push('  .dot-loader > i {');
+  L.push('    width: var(--size);');
+  L.push('    height: var(--size);');
+  if (radius) L.push(`    border-radius: ${radius};`);
+  if (clip) L.push(`    clip-path: ${clip};`);
+  if (d.smooth) L.push(`    transition: opacity ${d.interval}ms linear, transform ${d.interval}ms linear;`);
+  L.push('  }');
+  L.push('</style>');
+  L.push('');
+  L.push('<script>');
+  L.push('  (() => {');
+  L.push(`    const INTERVAL = ${d.interval};`);
+  L.push(`    const BASE = ${d.base};`);
+  L.push(`    const COLORS = ${JSON.stringify(d.colors)};`);
+  L.push('    const FRAMES = [');
+  L.push(framesLiteral(d.frames, '      '));
+  L.push('    ];');
+  L.push('    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;');
+  L.push('');
+  L.push('    document.querySelectorAll(".dot-loader:not([data-ready])").forEach((root) => {');
+  L.push('      root.dataset.ready = "";');
+  L.push('      const dots = [...FRAMES[0]].map((_, i) => {');
+  L.push('        const el = document.createElement("i");');
+  if (ring) L.push('        el.style.boxShadow = `inset 0 0 0 calc(var(--size) * 0.24) ${COLORS[i % COLORS.length]}`;');
+  else L.push('        el.style.background = COLORS[i % COLORS.length];');
+  L.push('        return root.appendChild(el);');
+  L.push('      });');
+  L.push('      const start = performance.now();');
+  L.push('      let last = -1;');
+  L.push('      const render = (now) => {');
+  L.push('        const f = reduce ? 0 : Math.floor((now - start) / INTERVAL) % FRAMES.length;');
+  L.push('        if (f !== last) {');
+  L.push('          last = f;');
+  L.push('          dots.forEach((el, i) => {');
+  L.push('            const c = FRAMES[f][i];');
+  L.push('            const v = c === "-" ? -1 : parseInt(c, 16) / 15;');
+  L.push('            el.style.opacity = v < 0 ? 0 : BASE + (1 - BASE) * v;');
+  if (d.scale) L.push('            el.style.transform = `scale(${v < 0 ? 0 : 0.4 + 0.6 * v})`;');
+  L.push('          });');
+  L.push('        }');
+  L.push('        if (!reduce) requestAnimationFrame(render);');
+  L.push('      };');
+  L.push('      requestAnimationFrame(render);');
+  L.push('    });');
+  L.push('  })();');
+  L.push('</' + 'script>');
+  return L.join('\n');
+}
+
+function projectJSON() {
+  const o = {};
+  for (const k of ['mode', 'cols', 'rows', 'shape', 'dotSize', 'gap', 'colorMode', 'colorA', 'colorB', 'gradDir', 'bg', 'base',
+    'glow', 'scaleFx', 'hideOff', 'preset', 'duration', 'reverse', 'mask', 'frames', 'frameMs']) o[k] = S[k];
+  o.$schema = 'dot-loader-studio/v1';
+  return JSON.stringify(o, null, 2).replace(/\[\s+([\d.,\s]+?)\s+\]/g, (m, a) => '[' + a.replace(/\s+/g, '') + ']');
+}
+
+function highlight(code) {
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const re = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/|<!--[\s\S]*?-->)|("(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(import|from|export|function|const|let|return|if|type|new|true|false|null)\b|(\b\d+(?:\.\d+)?)\b/g;
+  let out = '', last = 0, m;
+  while ((m = re.exec(code))) {
+    out += esc(code.slice(last, m.index));
+    const cls = m[1] ? 'c' : m[2] ? 's' : m[3] ? 'k' : 'n';
+    out += `<span class="t-${cls}">${esc(m[0])}</span>`;
+    last = re.lastIndex;
+  }
+  return out + esc(code.slice(last));
+}
+let codeText = '';
+function renderCode() {
+  const d = genData();
+  codeText = S.codeTab === 'react' ? genReact(d) : S.codeTab === 'html' ? genHTML(d) : projectJSON();
+  $('#codeOut').innerHTML = highlight(codeText);
+  $('#codeMeta').textContent = S.codeTab === 'json'
+    ? '完整项目文件：保存后可随时导入继续编辑。'
+    : `${d.cols}×${d.rows} 点阵 · ${d.frames.length} 帧 · 每帧 ${d.interval}ms · 零依赖，支持 prefers-reduced-motion。` +
+      (S.codeTab === 'react' ? ' 用法：<DotLoader size={8} />' : ' 粘贴到页面任意位置即可。');
+  $('#importBtn').hidden = $('#saveJsonBtn').hidden = S.codeTab !== 'json';
+}
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); }
+  catch (e) {
+    const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+  }
+}
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+$('#codeBtn').addEventListener('click', () => { openModal('#codeModal'); renderCode(); });
+$('#copyCode').addEventListener('click', async () => { await copyText(codeText); toast('代码已复制到剪贴板'); });
+$('#saveJsonBtn').addEventListener('click', () => downloadBlob(new Blob([projectJSON()], { type: 'application/json' }), `dot-loader-${S.cols}x${S.rows}.json`));
+$('#importBtn').addEventListener('click', () => $('#importFile').click());
+$('#importFile').addEventListener('change', async e => {
+  const file = e.target.files[0]; e.target.value = '';
+  if (!file) return;
+  try {
+    const o = JSON.parse(await file.text());
+    pushHistory();
+    applyProject(o);
+    if (!S.frames) S.frames = framesFromPreset(S.genPreset, S.genCount);
+    S.cur = 0; renderStrip(true); syncUI(); save(); renderCode();
+    toast('项目已导入');
+  } catch (err) { toast('导入失败：文件格式不正确'); }
+});
+
+/* =====================================================================
+   GIF encoder (GIF89a + LZW, median-cut palette)
+   ===================================================================== */
+class ByteWriter {
+  constructor(n = 1 << 16) { this.a = new Uint8Array(n); this.n = 0; }
+  b(v) { if (this.n >= this.a.length) { const t = new Uint8Array(this.a.length * 2); t.set(this.a); this.a = t; } this.a[this.n++] = v; }
+  w16(v) { this.b(v & 255); this.b(v >> 8 & 255); }
+  str(s) { for (let i = 0; i < s.length; i++) this.b(s.charCodeAt(i)); }
+  bytes() { return this.a.subarray(0, this.n); }
+}
+const LZW_CODE = new Int16Array(1 << 20), LZW_GEN = new Uint32Array(1 << 20);
+let lzwGen = 0;
+function lzwEncode(px) {
+  const w = new ByteWriter(px.length >> 1 || 64);
+  let size = 9, next = 258, gen = ++lzwGen, cur = 0, bits = 0;
+  const emit = c => { cur |= c << bits; bits += size; while (bits >= 8) { w.b(cur & 255); cur >>>= 8; bits -= 8; } };
+  emit(256);
+  let prefix = px[0];
+  for (let i = 1; i < px.length; i++) {
+    const k = px[i], key = (prefix << 8) | k;
+    if (LZW_GEN[key] === gen) { prefix = LZW_CODE[key]; continue; }
+    emit(prefix);
+    if (next < 4096) {
+      LZW_CODE[key] = next; LZW_GEN[key] = gen; next++;
+      if (next > (1 << size) && size < 12) size++;
+    } else {
+      emit(256); gen = ++lzwGen; next = 258; size = 9;
+    }
+    prefix = k;
+  }
+  emit(prefix); emit(257);
+  if (bits > 0) w.b(cur & 255);
+  return w.bytes();
+}
+function buildPalette(cnt, sr, sg, sb, max) {
+  const bins = [];
+  for (let k = 0; k < 32768; k++) if (cnt[k]) bins.push({ k, n: cnt[k], r: sr[k] / cnt[k], g: sg[k] / cnt[k], b: sb[k] / cnt[k] });
+  let boxes;
+  if (bins.length <= max) boxes = bins.map(b => [b]);
+  else {
+    boxes = [bins];
+    while (boxes.length < max) {
+      let bi = -1, best = 0, bc = 'r';
+      for (let j = 0; j < boxes.length; j++) {
+        const bx = boxes[j]; if (bx.length < 2) continue;
+        let r0 = 255, r1 = 0, g0 = 255, g1 = 0, b0 = 255, b1 = 0, tot = 0;
+        for (const c of bx) {
+          if (c.r < r0) r0 = c.r; if (c.r > r1) r1 = c.r; if (c.g < g0) g0 = c.g; if (c.g > g1) g1 = c.g;
+          if (c.b < b0) b0 = c.b; if (c.b > b1) b1 = c.b; tot += c.n;
+        }
+        const rg = [r1 - r0, g1 - g0, b1 - b0], ch = rg.indexOf(Math.max(...rg)), sc = rg[ch] * Math.sqrt(tot);
+        if (sc > best) { best = sc; bi = j; bc = 'rgb'[ch]; }
+      }
+      if (bi < 0) break;
+      const bx = boxes[bi].sort((u, v) => u[bc] - v[bc]);
+      let tot = 0; for (const c of bx) tot += c.n;
+      let acc = 0, s = bx.length - 1;
+      for (let q = 0; q < bx.length - 1; q++) { acc += bx[q].n; if (acc >= tot / 2) { s = q + 1; break; } }
+      boxes.splice(bi, 1, bx.slice(0, s), bx.slice(s));
+    }
+  }
+  const lut = new Uint8Array(32768);
+  const pal = boxes.map((bx, j) => {
+    let n = 0, r = 0, g = 0, b = 0;
+    for (const c of bx) { n += c.n; r += c.r * c.n; g += c.g * c.n; b += c.b * c.n; lut[c.k] = j; }
+    return [Math.round(r / n), Math.round(g / n), Math.round(b / n)];
+  });
+  return { pal, lut };
+}
+async function makeGif(scale, transparent, onProgress, cancelled) {
+  const { vals, interval } = exportFrames();
+  const cols = colors(), [gw, gh] = gridSize(), n = vals.length;
+  const pad = Math.round((S.glow ? S.dotSize * 0.9 : S.dotSize * 0.4) + 6);
+  const W = Math.round((gw + pad * 2) * scale), H = Math.round((gh + pad * 2) * scale);
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  const L = { cell: S.dotSize * scale, gap: S.gap * scale, ox: pad * scale, oy: pad * scale };
+  const render = k => {
+    ctx.clearRect(0, 0, W, H);
+    if (!transparent) { ctx.fillStyle = S.bg; ctx.fillRect(0, 0, W, H); }
+    drawDots(ctx, L, vals[k], cols, { glow: true });
+    return ctx.getImageData(0, 0, W, H).data;
+  };
+  const yieldUI = () => new Promise(r => setTimeout(r, 0));
+  // pass 1: histogram
+  const cnt = new Uint32Array(32768), sr = new Float64Array(32768), sg = new Float64Array(32768), sb = new Float64Array(32768);
+  for (let k = 0; k < n; k++) {
+    const d = render(k);
+    for (let p = 0; p < d.length; p += 4) {
+      if (transparent && d[p + 3] < 128) continue;
+      const key = (d[p] >> 3) << 10 | (d[p + 1] >> 3) << 5 | (d[p + 2] >> 3);
+      cnt[key]++; sr[key] += d[p]; sg[key] += d[p + 1]; sb[key] += d[p + 2];
+    }
+    onProgress((k + 1) / n * 0.35); await yieldUI(); if (cancelled()) return null;
+  }
+  const { pal, lut } = buildPalette(cnt, sr, sg, sb, transparent ? 255 : 256);
+  const trans = transparent ? pal.length : -1;
+  if (transparent) pal.push([0, 0, 0]);
+  if (!pal.length) pal.push([0, 0, 0]);
+  // pass 2: index + compress
+  const out = [];
+  const px = new Uint8Array(W * H);
+  for (let k = 0; k < n; k++) {
+    const d = render(k);
+    for (let p = 0, q = 0; q < px.length; p += 4, q++) {
+      px[q] = transparent && d[p + 3] < 128 ? trans : lut[(d[p] >> 3) << 10 | (d[p + 1] >> 3) << 5 | (d[p + 2] >> 3)];
+    }
+    out.push(lzwEncode(px).slice());
+    onProgress(0.35 + (k + 1) / n * 0.6); await yieldUI(); if (cancelled()) return null;
+  }
+  // assemble
+  const w = new ByteWriter(out.reduce((a, b) => a + b.length + 32, 1024));
+  w.str('GIF89a'); w.w16(W); w.w16(H); w.b(0xF7); w.b(0); w.b(0);
+  for (let i = 0; i < 256; i++) { const c = pal[i] || [0, 0, 0]; w.b(c[0]); w.b(c[1]); w.b(c[2]); }
+  w.b(0x21); w.b(0xFF); w.b(11); w.str('NETSCAPE2.0'); w.b(3); w.b(1); w.w16(0); w.b(0);
+  const delay = Math.max(2, Math.round(interval / 10));
+  for (const data of out) {
+    w.b(0x21); w.b(0xF9); w.b(4); w.b(transparent ? (2 << 2) | 1 : (1 << 2)); w.w16(delay); w.b(transparent ? trans : 0); w.b(0);
+    w.b(0x2C); w.w16(0); w.w16(0); w.w16(W); w.w16(H); w.b(0);
+    w.b(8);
+    for (let i = 0; i < data.length; i += 255) {
+      const len = Math.min(255, data.length - i); w.b(len);
+      for (let j = 0; j < len; j++) w.b(data[i + j]);
+    }
+    w.b(0);
+  }
+  w.b(0x3B);
+  onProgress(1);
+  return { blob: new Blob([w.bytes()], { type: 'image/gif' }), W, H, frames: n, delay };
+}
+let gifJob = 0, gifResult = null, gifUrl = null;
+async function runGif() {
+  if ($('#gifModal').hidden) return;
+  const job = ++gifJob;
+  $('#gifDownload').disabled = true;
+  $('#gifProg').style.width = '0%';
+  $('#gifPlaceholder').hidden = false; $('#gifImg').hidden = true;
+  $('#gifMeta').textContent = '';
+  await new Promise(r => setTimeout(r, 30));
+  const res = await makeGif(S.gifScale, S.gifTransparent, p => { if (job === gifJob) $('#gifProg').style.width = p * 100 + '%'; }, () => job !== gifJob);
+  if (!res || job !== gifJob) return;
+  gifResult = res;
+  if (gifUrl) URL.revokeObjectURL(gifUrl);
+  gifUrl = URL.createObjectURL(res.blob);
+  const img = $('#gifImg'); img.src = gifUrl; img.hidden = false; $('#gifPlaceholder').hidden = true;
+  img.style.width = Math.min(res.W / Math.max(1, S.gifScale / 2), 400) + 'px';
+  $('#gifMeta').textContent = `${res.W}×${res.H}px · ${res.frames} 帧 · 每帧 ${res.delay * 10}ms · ${(res.blob.size / 1024).toFixed(1)} KB`;
+  $('#gifDownload').disabled = false;
+}
+$('#gifBtn').addEventListener('click', () => { openModal('#gifModal'); runGif(); });
+$('#gifDownload').addEventListener('click', () => {
+  if (!gifResult) return;
+  const name = S.mode === 'pattern' ? S.preset : 'sequence';
+  downloadBlob(gifResult.blob, `dot-loader-${name}-${S.cols}x${S.rows}.gif`);
+  toast('GIF 已开始下载');
+});
+
+/* modals + toast */
+function openModal(sel) { $(sel).hidden = false; paintIcons($(sel)); syncUI(); }
+function closeModals() { $$('.modal').forEach(m => { m.hidden = true; }); gifJob++; }
+$$('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m || e.target.closest('[data-close]')) closeModals(); }));
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+/* =====================================================================
+   Init
+   ===================================================================== */
+try { const raw = localStorage.getItem(STORE); if (raw) applyProject(JSON.parse(raw)); } catch (e) { S = structuredClone(DEFAULTS); }
+if (!S.mask) S.mask = new Array(S.cols * S.rows).fill(1);
+if (!S.frames) S.frames = framesFromPreset('radar', 12);
+S.cur = clamp(S.cur, 0, S.frames.length - 1);
+paintIcons();
+buildGallery();
+renderStrip(true);
+syncUI();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
