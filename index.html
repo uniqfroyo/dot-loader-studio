@@ -188,6 +188,10 @@ kbd{font:11px var(--mono);padding:1px 6px;border-radius:5px;background:var(--pan
 .sheet-body{padding:16px;overflow:auto;min-height:0}
 .sheet-foot{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
 pre.code{margin:0;max-height:52vh;overflow:auto;padding:14px;border-radius:10px;background:#0a0a0d;border:1px solid var(--line);font:12px/1.6 var(--mono);color:#d6d6de;white-space:pre;tab-size:2}
+.braille-box{display:flex;gap:16px;align-items:center;margin-bottom:12px;padding:14px;border-radius:10px;background:#0a0a0d;border:1px solid var(--line)}
+.braille-preview{flex:none;min-width:96px;min-height:64px;display:grid;place-items:center;margin:0;padding:8px 12px;font:32px/1.05 "Apple Braille","Segoe UI Symbol","DejaVu Sans",var(--mono);color:var(--accent);white-space:pre}
+.braille-field{flex:1;margin:0}
+.braille-field .hint{margin-top:6px}
 .t-c{color:#6b6b78}.t-s{color:#a5d6a7}.t-k{color:#c4a7ff}.t-n{color:#fbbf77}
 .gif-box{display:grid;place-items:center;min-height:220px;border-radius:12px;border:1px solid var(--line);margin-bottom:14px;overflow:hidden;background-color:#1a1a1f;background-image:linear-gradient(45deg,#232329 25%,transparent 25%,transparent 75%,#232329 75%),linear-gradient(45deg,#232329 25%,transparent 25%,transparent 75%,#232329 75%);background-size:16px 16px;background-position:0 0,8px 8px}
 .gif-box img{max-width:100%;max-height:300px;image-rendering:auto}
@@ -408,16 +412,23 @@ body[data-mode=sequence] .pat-only{display:none!important}
   <div class="sheet">
     <div class="sheet-head">
       <h3>导出代码</h3>
-      <div class="seg" data-key="codeTab"><button data-v="react">React</button><button data-v="html">HTML</button><button data-v="json">JSON 项目</button></div>
+      <div class="seg" data-key="codeTab"><button data-v="react">React</button><button data-v="html">HTML</button><button data-v="npm">npm 包</button><button data-v="braille">终端盲文</button><button data-v="json">JSON 项目</button></div>
       <button class="icon-btn" data-close title="关闭"><i data-icon="x"></i></button>
     </div>
     <div class="sheet-body">
       <p class="hint" id="codeMeta" style="margin-bottom:10px"></p>
+      <div class="braille-box" id="brailleBox" hidden>
+        <pre class="braille-preview" id="braillePreview" aria-label="盲文预览"></pre>
+        <div class="field braille-field"><div class="field-top"><span>点亮阈值</span><span class="val" id="brailleThresholdVal"></span></div>
+          <input type="range" id="brailleThreshold" min="10" max="90" step="5">
+          <p class="hint">盲文字符里每个点只有凸起和平坦两种状态，亮度达到阈值的点才会凸起。每个字符由 2×4 个点组成，想要单个字符的效果可以用 2×4 网格，4×4 是两个字符。</p></div>
+      </div>
       <pre class="code"><code id="codeOut"></code></pre>
     </div>
     <div class="sheet-foot">
       <button class="btn ghost" id="importBtn"><i data-icon="upload"></i>导入 JSON</button>
       <button class="btn ghost" id="saveJsonBtn"><i data-icon="download"></i>保存 .json</button>
+      <button class="btn ghost" id="saveDefBtn"><i data-icon="download"></i>下载 loader.json</button>
       <input type="file" id="importFile" accept=".json,application/json" hidden>
       <div class="spacer"></div>
       <button class="btn primary" id="copyCode"><i data-icon="copy"></i>复制代码</button>
@@ -605,7 +616,7 @@ const DEFAULTS = {
   preset: 'ripple', duration: 1600, reverse: false,
   mask: null, frames: null, frameMs: 100, cur: 0, onion: true, tool: 'pen', brush: 1,
   genPreset: 'radar', genCount: 12,
-  previewTheme: 'dark', codeTab: 'react', gifScale: 2, gifTransparent: false,
+  previewTheme: 'dark', codeTab: 'react', gifScale: 2, gifTransparent: false, brailleThreshold: 0.5,
 };
 let S = structuredClone(DEFAULTS);
 const play = { pattern: true, sequence: false };
@@ -1130,6 +1141,7 @@ function tick(now) {
     drawThumbs();
   }
   drawLogo(now);
+  drawBraillePreview(now);
   requestAnimationFrame(tick);
 }
 
@@ -1232,6 +1244,10 @@ bindRange('duration', 'duration', {
 });
 bindRange('frameMs', 'frameMs', { fmt: v => v + 'ms', after: () => { seqStart = performance.now() - S.cur * S.frameMs; updateMeta(); } });
 bindRange('genCount', 'genCount', { fmt: v => v + ' 帧' });
+bindRange('brailleThreshold', 'brailleThreshold', {
+  toUi: v => Math.round(v * 100), fromUi: v => v / 100, fmt: v => Math.round(v * 100) + '%',
+  after: () => renderCode(),
+});
 bindColor('colorA'); bindColor('colorB'); bindColor('bg');
 
 $('#playBtn').addEventListener('click', togglePlay);
@@ -1347,6 +1363,96 @@ function genData() {
 const clipOf = shape => POLY[shape] ? `polygon(${POLY[shape].map(([x, y]) => `${+(x * 100).toFixed(1)}% ${+(y * 100).toFixed(1)}%`).join(', ')})` : '';
 const radiusOf = shape => ({ circle: '50%', ring: '50%', rounded: '28%' })[shape] || '';
 function framesLiteral(frames, indent) { return frames.map(f => `${indent}"${f}",`).join('\n'); }
+
+/* "dot-loader/v1" definition — the format read by the dot-loader-studio npm package */
+function genDef(d) {
+  return {
+    format: 'dot-loader/v1', cols: d.cols, rows: d.rows, interval: d.interval, frames: d.frames,
+    colors: d.colors, base: d.base, shape: d.shape, size: d.size, gap: d.gap,
+    glow: d.glow, scale: d.scale, smooth: d.smooth,
+  };
+}
+const defJSON = d => JSON.stringify(genDef(d), null, 2);
+
+/* braille: each character covers 2×4 dots (same mapping as the npm package) */
+const BRAILLE_BITS = [[0x01, 0x08], [0x02, 0x10], [0x04, 0x20], [0x40, 0x80]];
+function brailleFrames(d, threshold = S.brailleThreshold) {
+  return d.frames.map(f => {
+    const lines = [];
+    for (let by = 0; by < d.rows; by += 4) {
+      let line = '';
+      for (let bx = 0; bx < d.cols; bx += 2) {
+        let bits = 0;
+        for (let dy = 0; dy < 4; dy++) for (let dx = 0; dx < 2; dx++) {
+          const x = bx + dx, y = by + dy;
+          if (x < d.cols && y < d.rows) {
+            const c = f[y * d.cols + x];
+            if (c !== '-' && parseInt(c, 16) / 15 >= threshold) bits |= BRAILLE_BITS[dy][dx];
+          }
+        }
+        line += String.fromCharCode(0x2800 + bits);
+      }
+      lines.push(line);
+    }
+    return lines.join('\n');
+  });
+}
+
+function genNpm(d) {
+  const L = [];
+  L.push('// npm install dot-loader-studio');
+  L.push('import { DotLoader } from "dot-loader-studio/react";');
+  L.push('');
+  L.push(`// ${d.cols}×${d.rows} · ${d.frames.length} frames — also available as loader.json`);
+  L.push('const loader = ' + defJSON(d) + ';');
+  L.push('');
+  L.push('export function Thinking() {');
+  L.push(`  return <DotLoader loader={loader} size={${d.size}} label="Thinking" />;`);
+  L.push('}');
+  L.push('');
+  L.push('// Without React:');
+  L.push('//   import { mount } from "dot-loader-studio";');
+  L.push('//   const handle = mount(document.querySelector("#loader"), loader);');
+  L.push('//   handle.destroy();');
+  L.push('//');
+  L.push('// In a terminal:');
+  L.push('//   npx dot-loader-studio loader.json --text "Thinking…"');
+  return L.join('\n');
+}
+
+function genBraille(d) {
+  const frames = brailleFrames(d);
+  const L = [];
+  L.push(`// Terminal spinner · ${d.cols}×${d.rows} dots as braille · generated with Dot Loader Studio`);
+  L.push('// Zero dependencies (Node.js). Or use the package: npx dot-loader-studio loader.json');
+  L.push('const FRAMES = [');
+  L.push(frames.map(f => `  ${JSON.stringify(f)},`).join('\n'));
+  L.push('];');
+  L.push(`const INTERVAL = ${d.interval}; // ms per frame`);
+  L.push('');
+  L.push('export function startSpinner(text = "Thinking…", stream = process.stderr) {');
+  L.push('  const height = FRAMES[0].split("\\n").length;');
+  L.push('  let i = 0, drawn = false;');
+  L.push('  const draw = () => {');
+  L.push('    const lines = FRAMES[i++ % FRAMES.length].split("\\n").map((l) => "\\r\\x1b[2K" + l);');
+  L.push('    lines[0] += " " + text;');
+  L.push('    stream.write((drawn && height > 1 ? `\\x1b[${height - 1}A` : "") + lines.join("\\n"));');
+  L.push('    drawn = true;');
+  L.push('  };');
+  L.push('  stream.write("\\x1b[?25l");');
+  L.push('  draw();');
+  L.push('  const timer = setInterval(draw, INTERVAL);');
+  L.push('  return () => {');
+  L.push('    clearInterval(timer);');
+  L.push('    stream.write("\\r\\x1b[2K" + "\\x1b[1A\\r\\x1b[2K".repeat(height - 1) + "\\x1b[?25h");');
+  L.push('  };');
+  L.push('}');
+  L.push('');
+  L.push('// const stop = startSpinner("Thinking…");');
+  L.push('// await doWork();');
+  L.push('// stop();');
+  return { code: L.join('\n'), frames };
+}
 
 function genReact(d) {
   const clip = clipOf(d.shape), radius = radiusOf(d.shape), ring = d.shape === 'ring';
@@ -1505,17 +1611,36 @@ function highlight(code) {
   }
   return out + esc(code.slice(last));
 }
-let codeText = '';
+let codeText = '', braillePlay = null, lastData = null;
 function renderCode() {
-  const d = genData();
-  codeText = S.codeTab === 'react' ? genReact(d) : S.codeTab === 'html' ? genHTML(d) : projectJSON();
+  const d = lastData = genData(), tab = S.codeTab;
+  const summary = `${d.cols}×${d.rows} 点阵 · ${d.frames.length} 帧 · 每帧 ${d.interval}ms`;
+  braillePlay = null;
+  if (tab === 'react') codeText = genReact(d);
+  else if (tab === 'html') codeText = genHTML(d);
+  else if (tab === 'npm') codeText = genNpm(d);
+  else if (tab === 'braille') { const b = genBraille(d); codeText = b.code; braillePlay = { frames: b.frames, interval: d.interval }; }
+  else codeText = projectJSON();
   $('#codeOut').innerHTML = highlight(codeText);
-  $('#codeMeta').textContent = S.codeTab === 'json'
-    ? '完整项目文件：保存后可随时导入继续编辑。'
-    : `${d.cols}×${d.rows} 点阵 · ${d.frames.length} 帧 · 每帧 ${d.interval}ms · 零依赖，支持 prefers-reduced-motion。` +
-      (S.codeTab === 'react' ? ' 用法：<DotLoader size={8} />' : ' 粘贴到页面任意位置即可。');
-  $('#importBtn').hidden = $('#saveJsonBtn').hidden = S.codeTab !== 'json';
+  $('#codeMeta').textContent = {
+    react: `${summary} · 零依赖，支持 prefers-reduced-motion。用法：<DotLoader size={8} />`,
+    html: `${summary} · 零依赖，粘贴到页面任意位置即可。`,
+    npm: `${summary} · 通过 npm 包引用：动画数据是一份 loader.json，多个项目共用同一个包，升级只需更新依赖。`,
+    braille: `${summary} · Unicode 盲文字符，可用在终端、CLI 和纯文本里。`,
+    json: '完整项目文件：保存后可随时导入继续编辑。',
+  }[tab];
+  $('#importBtn').hidden = $('#saveJsonBtn').hidden = tab !== 'json';
+  $('#saveDefBtn').hidden = tab !== 'npm' && tab !== 'braille';
+  $('#brailleBox').hidden = tab !== 'braille';
 }
+function drawBraillePreview(now) {
+  if (!braillePlay || $('#codeModal').hidden) return;
+  const el = $('#braillePreview'), f = braillePlay.frames[Math.floor(now / braillePlay.interval) % braillePlay.frames.length];
+  if (el.textContent !== f) el.textContent = f;
+}
+$('#saveDefBtn').addEventListener('click', () => {
+  downloadBlob(new Blob([defJSON(lastData || genData()) + '\n'], { type: 'application/json' }), 'loader.json');
+});
 async function copyText(t) {
   try { await navigator.clipboard.writeText(t); }
   catch (e) {

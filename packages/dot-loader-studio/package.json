@@ -1,0 +1,30 @@
+{
+  "name": "dot-loader-studio",
+  "version": "0.1.0",
+  "description": "Runtime for dot-matrix loading animations designed in Dot Loader Studio: DOM, React, and braille for the terminal.",
+  "keywords": ["loader", "spinner", "loading", "animation", "dot-matrix", "braille", "react", "terminal"],
+  "homepage": "https://uniqfroyo.github.io/dot-loader-studio/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uniqfroyo/dot-loader-studio.git",
+    "directory": "packages/dot-loader-studio"
+  },
+  "license": "MIT",
+  "author": "uniqfroyo",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": { "types": "./index.d.ts", "default": "./index.js" },
+    "./react": { "types": "./react.d.ts", "default": "./react.js" },
+    "./terminal": { "types": "./terminal.d.ts", "default": "./terminal.js" },
+    "./package.json": "./package.json"
+  },
+  "bin": { "dot-loader-studio": "./cli.js" },
+  "files": ["*.js", "*.d.ts", "README.md", "LICENSE"],
+  "engines": { "node": ">=18" },
+  "peerDependencies": { "react": ">=16.8" },
+  "peerDependenciesMeta": { "react": { "optional": true } },
+  "scripts": { "test": "node --test" }
+}

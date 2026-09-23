@@ -1,6 +1,6 @@
 # Dot Loader Studio · 点阵加载动效编辑器
 
-A visual editor for dot-matrix loading animations, the "AI is thinking" kind. Pick a preset or draw frame by frame, then export React, HTML or GIF.
+A visual editor for dot-matrix loading animations, the "AI is thinking" kind. Pick a preset or draw frame by frame, then export React, HTML, an npm-ready loader, terminal braille or GIF.
 
 **▶ 在线使用 / Live demo: https://uniqfroyo.github.io/dot-loader-studio/**
 
@@ -37,9 +37,30 @@ npx serve .
 **导出**
 - React 组件（TSX）和原生 HTML/CSS/JS 片段，都不需要依赖，并且支持 `prefers-reduced-motion`
 - GIF：1×–4× 尺寸，可以选透明背景（内置 GIF89a 编码器）
+- npm 包：导出 `loader.json`，用 [`dot-loader-studio`](packages/dot-loader-studio) 包引用（React、原生 JS、终端都能用），多个项目共用一份运行时
+- 终端盲文：把点阵转成 Unicode 盲文字符（⠋⠙⠹），可调点亮阈值，并附带零依赖的 Node.js spinner 代码
 - JSON 项目文件：可以保存，之后再导入继续编辑
 
 编辑进度会自动存到浏览器的 localStorage。
+
+## npm 包
+
+```bash
+npm install dot-loader-studio
+```
+
+```tsx
+import { DotLoader } from "dot-loader-studio/react";
+import loader from "./loader.json";
+
+<DotLoader loader={loader} size={6} />
+```
+
+```bash
+npx dot-loader-studio loader.json --text "Thinking…"   # 在终端里播放
+```
+
+包的完整说明和 `dot-loader/v1` 数据格式见 [packages/dot-loader-studio](packages/dot-loader-studio/README.md)。
 
 ## License
 
