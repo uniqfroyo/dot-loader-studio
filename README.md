@@ -4,15 +4,25 @@ A visual editor for dot-matrix loading animations, the "AI is thinking" kind. Pi
 
 **▶ 在线使用 / Live demo: https://uniqfroyo.github.io/dot-loader-studio/**
 
-用来制作 “AI 正在思考” 那类点阵 loading 动效的编辑器。整个工具是一个 HTML 文件，没有任何依赖。
+用来制作 “AI 正在思考” 那类点阵 loading 动效的编辑器。界面使用 coss/ui 组件；点阵绘制与导出逻辑独立于界面组件。
 
-## 使用
+## Development
 
-直接用浏览器打开 `index.html`，或者起一个本地服务：
+The editor uses React, Vite, Tailwind CSS and official [coss/ui](https://coss.com/ui/docs) components. The animation runtime package in `packages/dot-loader-studio` remains independent of the editor build.
 
 ```bash
-npx serve .
+npm ci
+npm run dev
+npm test
+npm run build
+npm run preview
 ```
+
+Open the `/dot-loader-studio/` path on the local server. Production files are generated in `dist/`. The Vite base path matches the existing GitHub Pages URL.
+
+Before the first release of this React version, change the repository's **Settings → Pages → Source** to **GitHub Actions**. The included workflow builds and publishes `dist/` whenever `main` changes. Serving the source `index.html` directly will not run the production app.
+
+See [DESIGN.md](DESIGN.md) for workflow, responsive behavior and component conventions. Existing browser projects use the same storage key and JSON format, so saved work remains available.
 
 ## 功能
 
